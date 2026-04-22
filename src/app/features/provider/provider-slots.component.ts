@@ -137,13 +137,13 @@ import { FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
                           <td class="py-3">{{ slot.date | formatDate }}</td>
                           <td class="py-3">{{ slot.startTime | formatTime }} – {{ slot.endTime | formatTime }}</td>
                           <td class="py-3">
-                            @if (slot.isBooked) { <span class="badge-scheduled">Booked</span> }
-                            @else if (slot.isBlocked) { <span class="badge-cancelled">Blocked</span> }
+                            @if (slot.booked) { <span class="badge-scheduled">Booked</span> }
+                            @else if (slot.blocked) { <span class="badge-cancelled">Blocked</span> }
                             @else { <span class="badge-approved">Available</span> }
                           </td>
                           <td class="py-3">
-                            @if (!slot.isBooked) {
-                              @if (!slot.isBlocked) {
+                            @if (!slot.booked) {
+                              @if (!slot.blocked) {
                                 <button (click)="blockSlot(slot)" class="text-xs text-amber-600 hover:underline mr-3">Block</button>
                               } @else {
                                 <button (click)="unblockSlot(slot)" class="text-xs text-emerald-600 hover:underline mr-3">Unblock</button>
@@ -171,10 +171,10 @@ export class ProviderSlotsComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/provider/dashboard' },
-    { label: 'Appointments', icon: '📅', route: '/provider/appointments' },
-    { label: 'Slot Management', icon: '🗓️', route: '/provider/slots' },
-    { label: 'My Profile', icon: '👤', route: '/provider/profile' },
+    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
+    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
+    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 
   tabs = [

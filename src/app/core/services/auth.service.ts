@@ -72,7 +72,7 @@ export class AuthService {
         fullName: (payload['fullName'] as string) || (payload['name'] as string) || '',
         email: (payload['sub'] as string),
         role: payload['role'] as UserRole,
-        isActive: true,
+        active: true,
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem(this.TOKEN_KEY, token);

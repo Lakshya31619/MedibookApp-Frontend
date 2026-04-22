@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../core/services/toast.service';
+import { IconComponent } from './icon.component';
 
 @Component({
   selector: 'app-toast',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconComponent],
   template: `
     <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
       @for (toast of toastService.toasts(); track toast.id) {
@@ -17,11 +18,16 @@ import { ToastService } from '../../core/services/toast.service';
             'bg-navy-700 text-white': toast.type === 'info',
             'bg-amber-500 text-white': toast.type === 'warning'
           }">
-          <span class="text-lg leading-none mt-0.5">
-            {{ toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : toast.type === 'warning' ? '⚠' : 'ℹ' }}
-          </span>
+          <div class="flex-shrink-0 mt-0.5">
+            <app-icon
+              [name]="toast.type === 'success' ? 'check' : toast.type === 'error' ? 'x' : toast.type === 'warning' ? 'alert-triangle' : 'info'"
+              sizeClass="w-5 h-5">
+            </app-icon>
+          </div>
           <span class="flex-1">{{ toast.message }}</span>
-          <button class="opacity-70 hover:opacity-100 transition-opacity ml-2" (click)="toastService.dismiss(toast.id)">✕</button>
+          <button class="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity ml-2" (click)="toastService.dismiss(toast.id)">
+            <app-icon name="x" sizeClass="w-4 h-4"></app-icon>
+          </button>
         </div>
       }
     </div>

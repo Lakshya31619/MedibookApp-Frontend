@@ -8,11 +8,12 @@ import { ProviderService } from '../../core/services/provider.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ProviderResponse } from '../../core/models';
 import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
+import { IconComponent } from '../../shared/components/icon.component';
 
 @Component({
   selector: 'app-admin-pending',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarLayoutComponent, ConfirmModalComponent, StatusBadgePipe],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarLayoutComponent, ConfirmModalComponent, StatusBadgePipe, IconComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -31,7 +32,9 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
 
         @if (!loading && providers.length === 0) {
           <div class="card text-center py-16">
-            <div class="text-5xl mb-4">🎉</div>
+            <div class="inline-block p-3 bg-emerald-50 rounded-xl mb-4">
+              <app-icon name="check-circle" sizeClass="w-12 h-12 text-emerald-600"></app-icon>
+            </div>
             <h2 class="text-xl font-serif text-navy-700 mb-2">All caught up!</h2>
             <p class="text-gray-500">No providers pending approval.</p>
           </div>
@@ -56,19 +59,26 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
                       </div>
                       <p class="font-semibold text-gray-900">{{ p.specialization }}</p>
                       <p class="text-sm text-gray-500">{{ p.qualification }} · {{ p.experienceYears }} years experience</p>
-                      @if (p.clinicName) { <p class="text-xs text-gray-400 mt-0.5">🏥 {{ p.clinicName }}, {{ p.clinicAddress }}</p> }
+                      @if (p.clinicName) { 
+                        <p class="text-xs text-gray-400 mt-0.5">
+                          <app-icon name="hospital" sizeClass="w-3.5 h-3.5 inline mr-1 align-text-bottom"></app-icon>
+                          {{ p.clinicName }}, {{ p.clinicAddress }}
+                        </p> 
+                      }
                       @if (p.bio) { <p class="text-sm text-gray-600 mt-2 line-clamp-2">{{ p.bio }}</p> }
                     </div>
                   </div>
 
                   <div class="flex gap-2 flex-shrink-0">
                     <button (click)="approve(p)" [disabled]="actionId === p.providerId"
-                      class="btn-emerald text-sm py-2">
-                      {{ actionId === p.providerId ? '…' : '✓ Approve' }}
+                      class="btn-emerald text-sm py-2 flex items-center gap-1">
+                      <app-icon name="check" sizeClass="w-4 h-4"></app-icon>
+                      {{ actionId === p.providerId ? 'Approving…' : 'Approve' }}
                     </button>
                     <button (click)="openReject(p)"
-                      class="btn-danger text-sm py-2">
-                      ✕ Reject
+                      class="btn-danger text-sm py-2 flex items-center gap-1">
+                      <app-icon name="x" sizeClass="w-4 h-4"></app-icon>
+                      Reject
                     </button>
                     <a [routerLink]="['/admin/providers', p.providerId]" class="btn-secondary text-sm py-2">
                       Details
@@ -103,9 +113,9 @@ export class AdminPendingComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', icon: '⏳', route: '/admin/pending' },
-    { label: 'All Providers', icon: '👨‍⚕️', route: '/admin/providers' },
+    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
+    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
   ];
 
   providers: ProviderResponse[] = [];

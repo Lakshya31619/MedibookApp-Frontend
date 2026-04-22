@@ -1,18 +1,21 @@
-import { Component, Input, inject, signal } from '@angular/core';
+import { Component, Input, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ProviderService } from '../../core/services/provider.service';
+import { IconComponent } from './icon.component';
 
 export interface NavItem {
   label: string;
-  icon: string;
+  icon?: string;
+  iconName?: string;
   route: string;
 }
 
 @Component({
   selector: 'app-sidebar-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   template: `
     <div class="flex h-screen bg-gray-50 overflow-hidden">
       <!-- Mobile overlay -->
@@ -37,8 +40,12 @@ export interface NavItem {
         <!-- User info -->
         <div class="px-6 py-4 border-b border-white/10">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {{ initials }}
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 overflow-hidden bg-white/20">
+              @if (profilePicUrl()) {
+                <img [src]="profilePicUrl()" class="w-full h-full object-cover" [alt]="auth.currentUser()?.fullName || 'Profile'">
+              } @else {
+                {{ initials }}
+              }
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-white text-sm font-medium truncate">{{ auth.currentUser()?.fullName }}</p>
@@ -55,7 +62,11 @@ export interface NavItem {
               routerLinkActive="active"
               class="sidebar-link mb-1"
               (click)="mobileOpen.set(false)">
-              <span class="text-lg w-6 text-center">{{ item.icon }}</span>
+              @if (item.iconName) {
+                <app-icon [name]="item.iconName" sizeClass="w-5 h-5"></app-icon>
+              } @else if (item.icon) {
+                <span class="text-lg w-6 text-center">{{ item.icon }}</span>
+              }
               <span>{{ item.label }}</span>
             </a>
           }
@@ -64,7 +75,7 @@ export interface NavItem {
         <!-- Logout -->
         <div class="px-3 py-4 border-t border-white/10">
           <button (click)="logout()" class="sidebar-link w-full">
-            <span class="text-lg w-6 text-center">🚪</span>
+            <app-icon name="x" sizeClass="w-5 h-5"></app-icon>
             <span>Sign Out</span>
           </button>
         </div>
@@ -90,14 +101,33 @@ export interface NavItem {
     </div>
   `
 })
-export class SidebarLayoutComponent {
+export class SidebarLayoutComponent implements OnInit {
   @Input() navItems: NavItem[] = [];
   auth = inject(AuthService);
+  private providerService = inject(ProviderService);
   mobileOpen = signal(false);
+  profilePicUrl = signal<string | null>(null);
 
   get initials(): string {
     const name = this.auth.currentUser()?.fullName || '';
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  ngOnInit(): void {
+    // Load profile picture for providers
+    const currentUser = this.auth.currentUser();
+    if (currentUser && currentUser.role === 'PROVIDER') {
+      this.providerService.getMyProfile(currentUser.userId).subscribe({
+        next: (profile) => {
+          if (profile.profilePicUrl) {
+            this.profilePicUrl.set(profile.profilePicUrl);
+          }
+        },
+        error: () => {
+          // Silently fail - just show initials
+        }
+      });
+    }
   }
 
   logout(): void {

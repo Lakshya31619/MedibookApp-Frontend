@@ -106,8 +106,8 @@ import { StatusBadgePipe, FormatDatePipe } from '../../shared/pipes/status.pipe'
               </div>
               <div>
                 <span class="text-gray-400">Availability</span>
-                <p class="font-medium" [ngClass]="provider.isAvailable ? 'text-emerald-600' : 'text-red-500'">
-                  {{ provider.isAvailable ? 'Available' : 'Not Available' }}
+                <p class="font-medium" [ngClass]="provider.available ? 'text-emerald-600' : 'text-red-500'">
+                  {{ provider.available ? 'Available' : 'Not Available' }}
                 </p>
               </div>
             </div>
@@ -157,9 +157,9 @@ export class AdminProviderDetailComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', icon: '⏳', route: '/admin/pending' },
-    { label: 'All Providers', icon: '👨‍⚕️', route: '/admin/providers' },
+    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
+    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
   ];
 
   provider: ProviderResponse | null = null;
@@ -181,7 +181,7 @@ export class AdminProviderDetailComponent implements OnInit {
     this.providerService.approve(this.provider!.providerId).subscribe({
       next: () => {
         this.acting = false;
-        this.provider = { ...this.provider!, verificationStatus: 'APPROVED', isVerified: true };
+        this.provider = { ...this.provider!, verificationStatus: 'APPROVED', verified: true };
         this.toast.success('Provider approved!');
       },
       error: () => { this.acting = false; this.toast.error('Failed.'); }
@@ -194,7 +194,7 @@ export class AdminProviderDetailComponent implements OnInit {
     this.rejectModal = false;
     this.providerService.reject(this.provider!.providerId, reason).subscribe({
       next: () => {
-        this.provider = { ...this.provider!, verificationStatus: 'REJECTED', isVerified: false, rejectionReason: reason };
+        this.provider = { ...this.provider!, verificationStatus: 'REJECTED', verified: false, rejectionReason: reason };
         this.toast.info('Provider rejected.');
       },
       error: () => this.toast.error('Failed.')

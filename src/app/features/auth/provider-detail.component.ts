@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/components/navbar.component';
+import { IconComponent } from '../../shared/components/icon.component';
 import { ProviderService } from '../../core/services/provider.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -12,7 +13,7 @@ import { FormatTimePipe } from '../../shared/pipes/status.pipe';
 @Component({
   selector: 'app-provider-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, FormatTimePipe],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, IconComponent, FormatTimePipe],
   template: `
     <app-navbar></app-navbar>
 
@@ -36,8 +37,8 @@ import { FormatTimePipe } from '../../shared/pipes/status.pipe';
           <div class="flex-1">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 class="text-2xl font-serif text-navy-700 mb-1">{{ provider.specialization }} Specialist</h1>
-                <p class="text-emerald-600 font-medium mb-1">{{ provider.qualification }}</p>
+                <h1 class="text-2xl font-serif text-navy-700 mb-1">Dr. {{ provider.providerName || 'Healthcare Provider' }}</h1>
+                <p class="text-emerald-600 font-medium mb-1">{{ provider.specialization }}</p>
                 <p class="text-gray-500 text-sm">{{ provider.experienceYears }} years of experience</p>
               </div>
               <div class="text-right">
@@ -51,11 +52,27 @@ import { FormatTimePipe } from '../../shared/pipes/status.pipe';
               <p class="text-gray-600 text-sm mt-3 leading-relaxed">{{ provider.bio }}</p>
             }
             <div class="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
-              @if (provider.clinicName) { <span>🏥 {{ provider.clinicName }}</span> }
-              @if (provider.clinicAddress) { <span>📍 {{ provider.clinicAddress }}</span> }
+              @if (provider.clinicName) { 
+                <span class="flex items-center gap-1.5">
+                  <app-icon name="hospital" class="w-4 h-4 text-emerald-600"></app-icon>
+                  {{ provider.clinicName }}
+                </span> 
+              }
+              @if (provider.clinicAddress) { 
+                <span class="flex items-center gap-1.5">
+                  <app-icon name="info" class="w-4 h-4 text-emerald-600"></app-icon>
+                  {{ provider.clinicAddress }}
+                </span> 
+              }
               @if (provider.avgRating) { <span>★ {{ provider.avgRating.toFixed(1) }}</span> }
-              <span [ngClass]="provider.isAvailable ? 'text-emerald-600 font-medium' : 'text-red-500'">
-                {{ provider.isAvailable ? '✓ Available' : '✗ Not Available' }}
+              <span [ngClass]="provider.available ? 'text-emerald-600 font-medium flex items-center gap-1.5' : 'text-red-500 flex items-center gap-1.5'">
+                @if (provider.available) {
+                  <app-icon name="check-circle" class="w-4 h-4"></app-icon>
+                  Available
+                } @else {
+                  <app-icon name="x-circle" class="w-4 h-4"></app-icon>
+                  Not Available
+                }
               </span>
             </div>
           </div>
@@ -84,7 +101,9 @@ import { FormatTimePipe } from '../../shared/pipes/status.pipe';
 
           @if (!slotsLoading && slots.length === 0 && selectedDate) {
             <div class="text-center py-8 text-gray-400">
-              <div class="text-3xl mb-2">📅</div>
+              <div class="flex justify-center mb-2">
+                <app-icon name="calendar" class="w-8 h-8"></app-icon>
+              </div>
               <p>No available slots for this date.</p>
             </div>
           }

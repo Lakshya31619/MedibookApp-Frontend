@@ -29,13 +29,13 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
           <!-- Status -->
           <div class="flex items-center gap-3 mb-6">
             <span [ngClass]="profile.verificationStatus | statusBadge">{{ profile.verificationStatus }}</span>
-            @if (profile.isAvailable) {
+            @if (profile.available) {
               <span class="badge-approved">Available</span>
             } @else {
               <span class="badge-cancelled">Not Available</span>
             }
             <button (click)="toggleAvailability()" class="text-sm text-navy-700 border border-navy-200 px-3 py-1 rounded-lg hover:bg-navy-50 transition-colors ml-2">
-              {{ profile.isAvailable ? 'Set Unavailable' : 'Set Available' }}
+              {{ profile.available ? 'Set Unavailable' : 'Set Available' }}
             </button>
           </div>
 
@@ -107,10 +107,10 @@ export class ProviderProfileComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/provider/dashboard' },
-    { label: 'Appointments', icon: '📅', route: '/provider/appointments' },
-    { label: 'Slot Management', icon: '🗓️', route: '/provider/slots' },
-    { label: 'My Profile', icon: '👤', route: '/provider/profile' },
+    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
+    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
+    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 
   profile: ProviderResponse | null = null;
@@ -145,7 +145,7 @@ export class ProviderProfileComponent implements OnInit {
   }
 
   toggleAvailability(): void {
-    const next = !this.profile!.isAvailable;
+    const next = !this.profile!.available;
     this.providerService.setAvailability(this.profile!.providerId, next).subscribe({
       next: (p) => { this.profile = p; this.toast.success(`Availability set to ${next ? 'Available' : 'Unavailable'}`); },
       error: () => this.toast.error('Failed.')

@@ -74,10 +74,10 @@ export class ProviderAppointmentsComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/provider/dashboard' },
-    { label: 'Appointments', icon: '📅', route: '/provider/appointments' },
-    { label: 'Slot Management', icon: '🗓️', route: '/provider/slots' },
-    { label: 'My Profile', icon: '👤', route: '/provider/profile' },
+    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
+    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
+    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 
   tab: 'today' | 'all' = 'today';

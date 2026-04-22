@@ -7,7 +7,7 @@ export interface User {
   email: string;
   phone?: string;
   role: UserRole;
-  isActive: boolean;
+  active: boolean;        // FIX: backend renamed isActive → active
   provider?: string;
   profilePicUrl?: string;
   createdAt: string;
@@ -38,20 +38,21 @@ export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ProviderSummary {
   providerId: string;
+  providerName?: string;  // FIX: doctor's full name from backend
   specialization: string;
   clinicName?: string;
   clinicAddress?: string;
   avgRating?: number;
-  isAvailable: boolean;
+  available: boolean;     // FIX: backend renamed isAvailable → available
   consultationFee?: number;
   profilePicUrl?: string;
   experienceYears?: number;
-  fullName?: string;
 }
 
 export interface ProviderResponse {
   providerId: string;
   userId: string;
+  providerName?: string;  // FIX: doctor's full name from backend
   specialization: string;
   qualification: string;
   experienceYears: number;
@@ -59,14 +60,13 @@ export interface ProviderResponse {
   clinicName?: string;
   clinicAddress?: string;
   avgRating?: number;
-  isAvailable: boolean;
-  isVerified: boolean;
+  available: boolean;     // FIX: backend renamed isAvailable → available
+  verified: boolean;      // FIX: backend renamed isVerified → verified
   verificationStatus: VerificationStatus;
   rejectionReason?: string;
   consultationFee?: number;
   profilePicUrl?: string;
   createdAt: string;
-  fullName?: string;
 }
 
 export interface ProviderRegisterRequest {
@@ -104,8 +104,8 @@ export interface SlotResponse {
   startTime: string;
   endTime: string;
   durationMinutes: number;
-  isBooked: boolean;
-  isBlocked: boolean;
+  booked: boolean;        // FIX: backend renamed isBooked → booked
+  blocked: boolean;       // FIX: backend renamed isBlocked → blocked
   recurrence?: string;
   createdAt: string;
 }

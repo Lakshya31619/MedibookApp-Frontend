@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { NavbarComponent } from '../../shared/components/navbar.component';
+import { IconComponent } from '../../shared/components/icon.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterModule, NavbarComponent],
+  imports: [RouterModule, NavbarComponent, IconComponent],
   template: `
     <app-navbar></app-navbar>
 
@@ -13,7 +14,7 @@ import { NavbarComponent } from '../../shared/components/navbar.component';
     <section class="bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 text-white py-20 px-4">
       <div class="max-w-5xl mx-auto text-center page-enter">
         <div class="inline-block bg-white/10 text-emerald-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 border border-white/20">
-          🏥 Healthcare Made Simple
+          <app-icon name="hospital" sizeClass="w-4 h-4 inline mr-2"></app-icon>Healthcare Made Simple
         </div>
         <h1 class="text-5xl md:text-6xl font-serif mb-6 leading-tight">
           Book Appointments<br/>
@@ -37,7 +38,9 @@ import { NavbarComponent } from '../../shared/components/navbar.component';
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         @for (feature of features; track feature.title) {
           <div class="card text-center hover:shadow-md transition-shadow">
-            <div class="text-4xl mb-4">{{ feature.icon }}</div>
+            <div class="inline-block p-3 bg-navy-50 rounded-xl mb-4">
+              <app-icon [name]="feature.icon" sizeClass="w-8 h-8 text-navy-700"></app-icon>
+            </div>
             <h3 class="text-xl font-serif text-navy-700 mb-2">{{ feature.title }}</h3>
             <p class="text-gray-500 text-sm leading-relaxed">{{ feature.desc }}</p>
           </div>
@@ -52,8 +55,10 @@ import { NavbarComponent } from '../../shared/components/navbar.component';
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           @for (spec of specializations; track spec.label) {
             <a [routerLink]="['/providers']" [queryParams]="{spec: spec.label}"
-               class="card flex flex-col items-center gap-2 py-6 hover:shadow-md hover:border-navy-200 transition-all cursor-pointer text-center">
-              <span class="text-3xl">{{ spec.icon }}</span>
+               class="card flex flex-col items-center gap-3 py-6 hover:shadow-md hover:border-navy-200 transition-all cursor-pointer text-center group">
+              <div class="inline-block p-2 bg-navy-50 rounded-lg group-hover:bg-navy-100 transition-colors">
+                <app-icon [name]="spec.icon" sizeClass="w-6 h-6 text-navy-700"></app-icon>
+              </div>
               <span class="text-sm font-medium text-gray-700">{{ spec.label }}</span>
             </a>
           }
@@ -78,14 +83,14 @@ import { NavbarComponent } from '../../shared/components/navbar.component';
 })
 export class LandingComponent {
   features = [
-    { icon: '🔍', title: 'Find Specialists', desc: 'Search by specialization, location, or doctor name. Filter by availability and fees.' },
-    { icon: '📅', title: 'Instant Booking', desc: 'See real-time slot availability and book appointments in under 60 seconds.' },
-    { icon: '✅', title: 'Verified Providers', desc: 'Every doctor is reviewed and approved by our admin team before going live.' },
+    { icon: 'user', title: 'Find Specialists', desc: 'Search by specialization, location, or doctor name. Filter by availability and fees.' },
+    { icon: 'calendar', title: 'Instant Booking', desc: 'See real-time slot availability and book appointments in under 60 seconds.' },
+    { icon: 'check-circle', title: 'Verified Providers', desc: 'Every doctor is reviewed and approved by our admin team before going live.' },
   ];
   specializations = [
-    { icon: '🫀', label: 'Cardiology' }, { icon: '🧠', label: 'Neurology' },
-    { icon: '🦷', label: 'Dentistry' }, { icon: '👁️', label: 'Ophthalmology' },
-    { icon: '🦴', label: 'Orthopedics' }, { icon: '🧒', label: 'Pediatrics' },
-    { icon: '🩺', label: 'General Medicine' }, { icon: '🧬', label: 'Dermatology' },
+    { icon: 'stethoscope', label: 'Cardiology' }, { icon: 'stethoscope', label: 'Neurology' },
+    { icon: 'stethoscope', label: 'Dentistry' }, { icon: 'stethoscope', label: 'Ophthalmology' },
+    { icon: 'stethoscope', label: 'Orthopedics' }, { icon: 'stethoscope', label: 'Pediatrics' },
+    { icon: 'stethoscope', label: 'General Medicine' }, { icon: 'stethoscope', label: 'Dermatology' },
   ];
 }

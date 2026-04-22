@@ -120,9 +120,9 @@ export class AdminProvidersComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', icon: '⏳', route: '/admin/pending' },
-    { label: 'All Providers', icon: '👨‍⚕️', route: '/admin/providers' },
+    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
+    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
   ];
 
   providers: ProviderResponse[] = [];
@@ -152,7 +152,7 @@ export class AdminProvidersComponent implements OnInit {
     this.providerService.approve(p.providerId).subscribe({
       next: () => {
         const idx = this.providers.findIndex(x => x.providerId === p.providerId);
-        if (idx !== -1) this.providers[idx] = { ...this.providers[idx], verificationStatus: 'APPROVED', isVerified: true };
+        if (idx !== -1) this.providers[idx] = { ...this.providers[idx], verificationStatus: 'APPROVED', verified: true };
         this.applyFilter();
         this.toast.success('Provider approved!');
       },

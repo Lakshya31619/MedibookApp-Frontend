@@ -73,11 +73,11 @@ import { ProviderSummary } from '../../core/models';
                   @if (provider.profilePicUrl) {
                     <img [src]="provider.profilePicUrl" class="w-full h-full object-cover" alt="">
                   } @else {
-                    {{ (provider.fullName || provider.clinicName || '?')[0].toUpperCase() }}
+                    {{ (provider.providerName || provider.clinicName || '?')[0].toUpperCase() }}
                   }
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-gray-900 truncate">{{ provider.fullName || 'Dr. ' + provider.clinicName }}</h3>
+                  <h3 class="font-semibold text-gray-900 truncate">Dr. {{ provider.providerName || 'Healthcare Provider' }}</h3>
                   <p class="text-emerald-600 text-sm font-medium">{{ provider.specialization }}</p>
                   @if (provider.experienceYears) {
                     <p class="text-gray-400 text-xs">{{ provider.experienceYears }} yrs experience</p>
@@ -101,8 +101,8 @@ import { ProviderSummary } from '../../core/models';
                     <span class="text-amber-500">★ {{ provider.avgRating.toFixed(1) }}</span>
                   }
                   <span class="text-xs px-2 py-0.5 rounded-full"
-                    [ngClass]="provider.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'">
-                    {{ provider.isAvailable ? 'Available' : 'Busy' }}
+                    [ngClass]="provider.available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'">
+                    {{ provider.available ? 'Available' : 'Busy' }}
                   </span>
                 </div>
                 <a [routerLink]="['/providers', provider.providerId]"

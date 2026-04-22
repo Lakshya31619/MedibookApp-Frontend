@@ -111,9 +111,9 @@ export class AdminDashboardComponent implements OnInit {
   private providerService = inject(ProviderService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', icon: '⏳', route: '/admin/pending' },
-    { label: 'All Providers', icon: '👨‍⚕️', route: '/admin/providers' },
+    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
+    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
   ];
 
   pendingProviders: ProviderResponse[] = [];

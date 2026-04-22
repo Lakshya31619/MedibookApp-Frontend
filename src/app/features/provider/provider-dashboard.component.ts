@@ -7,11 +7,12 @@ import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { ProviderResponse, AppointmentSummary, AppointmentCount } from '../../core/models';
 import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
+import { IconComponent } from '../../shared/components/icon.component';
 
 @Component({
   selector: 'app-provider-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe, IconComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -24,7 +25,7 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
         @if (profile) {
           @if (profile.verificationStatus === 'PENDING') {
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <span class="text-amber-500 text-xl">⏳</span>
+              <app-icon name="clock" sizeClass="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5"></app-icon>
               <div>
                 <p class="font-semibold text-amber-800">Verification Pending</p>
                 <p class="text-amber-700 text-sm">Your profile is under review. You'll be notified once approved.</p>
@@ -33,7 +34,7 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
           }
           @if (profile.verificationStatus === 'APPROVED') {
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <span class="text-emerald-500 text-xl">✅</span>
+              <app-icon name="check-circle" sizeClass="w-6 h-6 text-emerald-500 flex-shrink-0 mt-0.5"></app-icon>
               <div>
                 <p class="font-semibold text-emerald-800">Verified Provider</p>
                 <p class="text-emerald-700 text-sm">Your profile is active. Patients can book appointments with you.</p>
@@ -42,7 +43,7 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
           }
           @if (profile.verificationStatus === 'REJECTED') {
             <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <span class="text-red-500 text-xl">❌</span>
+              <app-icon name="x-circle" sizeClass="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5"></app-icon>
               <div>
                 <p class="font-semibold text-red-800">Verification Rejected</p>
                 @if (profile.rejectionReason) {
@@ -57,32 +58,59 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
         <!-- No profile yet -->
         @if (!profileLoading && !profile) {
           <div class="card text-center py-12 mb-6">
-            <div class="text-5xl mb-4">👨‍⚕️</div>
+            <div class="inline-block p-4 bg-navy-50 rounded-xl mb-4">
+              <app-icon name="user" sizeClass="w-10 h-10 text-navy-700"></app-icon>
+            </div>
             <h2 class="text-xl font-serif text-navy-700 mb-2">Complete Your Profile</h2>
             <p class="text-gray-500 mb-6">Set up your provider profile to start accepting appointments.</p>
             <a routerLink="/provider/profile-setup" class="btn-primary">Set Up Profile</a>
           </div>
         }
 
+        <!-- Profile Card -->
+        @if (profile && !profileLoading) {
+          <div class="card mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div class="w-24 h-24 rounded-2xl bg-navy-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+              @if (profile.profilePicUrl) {
+                <img [src]="profile.profilePicUrl" class="w-full h-full object-cover" alt="{{ profile.specialization }}">
+              } @else {
+                <app-icon name="user" sizeClass="w-12 h-12 text-navy-400"></app-icon>
+              }
+            </div>
+            <div class="flex-1">
+              <h2 class="text-2xl font-serif text-navy-700 mb-1">Dr. {{ (auth.currentUser()?.fullName || 'Provider') }}</h2>
+              <p class="text-lg text-navy-600 font-medium mb-2">{{ profile.specialization }}</p>
+              <p class="text-gray-600 text-sm">{{ profile.qualification }} • {{ profile.experienceYears }} years experience</p>
+              @if (profile.clinicName) {
+                <p class="text-gray-500 text-sm mt-2 flex items-center gap-2">
+                  <app-icon name="hospital" sizeClass="w-4 h-4"></app-icon>
+                  {{ profile.clinicName }}
+                </p>
+              }
+            </div>
+            <a routerLink="/provider/profile" class="btn-secondary text-sm flex-shrink-0">Edit Profile</a>
+          </div>
+        }
+
         <!-- Stats -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="card">
-            <div class="text-2xl mb-1">📅</div>
+            <div class="mb-2"><app-icon name="calendar" sizeClass="w-6 h-6 text-navy-700"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.scheduled || 0 }}</p>
             <p class="text-gray-500 text-xs mt-0.5">Scheduled</p>
           </div>
           <div class="card">
-            <div class="text-2xl mb-1">✅</div>
+            <div class="mb-2"><app-icon name="check-circle" sizeClass="w-6 h-6 text-emerald-600"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.completed || 0 }}</p>
             <p class="text-gray-500 text-xs mt-0.5">Completed</p>
           </div>
           <div class="card">
-            <div class="text-2xl mb-1">❌</div>
+            <div class="mb-2"><app-icon name="x-circle" sizeClass="w-6 h-6 text-red-600"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.cancelled || 0 }}</p>
             <p class="text-gray-500 text-xs mt-0.5">Cancelled</p>
           </div>
           <div class="card">
-            <div class="text-2xl mb-1">📊</div>
+            <div class="mb-2"><app-icon name="info" sizeClass="w-6 h-6 text-blue-600"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.total || 0 }}</p>
             <p class="text-gray-500 text-xs mt-0.5">Total</p>
           </div>
@@ -125,15 +153,15 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
   `
 })
 export class ProviderDashboardComponent implements OnInit {
-  private auth = inject(AuthService);
+  auth = inject(AuthService);
   private providerService = inject(ProviderService);
   private apptService = inject(AppointmentService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: '🏠', route: '/provider/dashboard' },
-    { label: 'Appointments', icon: '📅', route: '/provider/appointments' },
-    { label: 'Slot Management', icon: '🗓️', route: '/provider/slots' },
-    { label: 'My Profile', icon: '👤', route: '/provider/profile' },
+    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
+    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
+    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 
   profile: ProviderResponse | null = null;
