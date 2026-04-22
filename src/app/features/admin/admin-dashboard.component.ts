@@ -10,7 +10,7 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -111,9 +111,10 @@ export class AdminDashboardComponent implements OnInit {
   private providerService = inject(ProviderService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Dashboard', iconName: 'home', route: '/admin/dashboard' },
     { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
-    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
+    { label: 'All Providers', iconName: 'users', route: '/admin/providers' },
+    { label: 'Payments', iconName: 'dollar-sign', route: '/admin/payments' },
   ];
 
   pendingProviders: ProviderResponse[] = [];

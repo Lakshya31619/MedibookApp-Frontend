@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
+import { IconComponent } from '../../shared/components/icon.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { AuthService } from '../../core/services/auth.service';
 import { AppointmentService } from '../../core/services/appointment.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppointmentSummary, SlotSummary } from '../../core/models';
@@ -14,27 +16,36 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
 @Component({
   selector: 'app-patient-appointments',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarLayoutComponent, ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarLayoutComponent, IconComponent,
+            ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
+
         <div class="flex items-center justify-between mb-6">
-          <h1 class="text-3xl font-serif text-navy-700">My Appointments</h1>
-          <a routerLink="/patient/browse" class="btn-primary text-sm py-2">+ Book New</a>
+          <div>
+            <h1 class="page-title">My Appointments</h1>
+            <p class="page-subtitle">Manage your upcoming and past visits</p>
+          </div>
+          <a routerLink="/patient/browse" class="btn-primary text-sm">
+            <app-icon name="plus" [size]="15"></app-icon>
+            Book New
+          </a>
         </div>
 
         <!-- Tabs -->
-        <div class="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl mb-6 w-fit">
           <button (click)="tab = 'upcoming'" class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-            [ngClass]="tab === 'upcoming' ? 'bg-white text-navy-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            [ngClass]="tab === 'upcoming' ? 'bg-white text-navy-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
             Upcoming ({{ upcoming.length }})
           </button>
           <button (click)="tab = 'past'; loadPast()" class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-            [ngClass]="tab === 'past' ? 'bg-white text-navy-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            [ngClass]="tab === 'past' ? 'bg-white text-navy-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
             Past
           </button>
         </div>
 
+        <!-- Loading skeleton -->
         @if (loading) {
           <div class="space-y-3">
             @for (i of [1,2,3]; track i) {
@@ -46,28 +57,44 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
         <!-- Upcoming -->
         @if (!loading && tab === 'upcoming') {
           @if (upcoming.length === 0) {
-            <div class="card text-center py-12 text-gray-400">
-              <div class="text-4xl mb-3">📅</div>
-              <p>No upcoming appointments</p>
-              <a routerLink="/patient/browse" class="btn-primary inline-block mt-4 text-sm py-2">Find a Doctor</a>
+            <div class="card text-center py-14">
+              <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <app-icon name="calendar" [size]="22" class="text-slate-400"></app-icon>
+              </div>
+              <p class="font-medium text-slate-600 mb-1">No upcoming appointments</p>
+              <p class="text-sm text-slate-400 mb-5">Book your first appointment to get started.</p>
+              <a routerLink="/patient/browse" class="btn-primary inline-flex text-sm">Find a Doctor</a>
             </div>
           }
-          <div class="space-y-4">
+          <div class="space-y-3">
             @for (appt of upcoming; track appt.appointmentId) {
               <div class="card">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div class="flex items-center gap-2 mb-1">
-                      <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
-                      <span class="text-xs text-gray-400">{{ appt.modeOfConsultation === 'VIDEO' ? '📹 Video' : '🏥 In-Person' }}</span>
+                  <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 bg-navy-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <app-icon [name]="appt.modeOfConsultation === 'VIDEO' ? 'video' : 'stethoscope'"
+                                [size]="18" class="text-navy-600"></app-icon>
                     </div>
-                    <p class="font-semibold text-gray-900">{{ appt.serviceType }}</p>
-                    <p class="text-sm text-gray-500">{{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }} – {{ appt.endTime | formatTime }}</p>
+                    <div>
+                      <div class="flex items-center gap-2 mb-0.5">
+                        <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                      </div>
+                      <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
+                      <p class="text-xs text-slate-500 mt-0.5">
+                        {{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }} – {{ appt.endTime | formatTime }}
+                      </p>
+                    </div>
                   </div>
                   @if (appt.status === 'SCHEDULED') {
                     <div class="flex gap-2 flex-shrink-0">
-                      <button (click)="openReschedule(appt)" class="btn-secondary text-sm py-2">Reschedule</button>
-                      <button (click)="openCancel(appt)" class="btn-danger text-sm py-2">Cancel</button>
+                      <button (click)="openReschedule(appt)" class="btn-secondary text-xs py-1.5 px-3">
+                        <app-icon name="refresh-cw" [size]="13"></app-icon>
+                        Reschedule
+                      </button>
+                      <button (click)="openCancel(appt)" class="btn-danger text-xs py-1.5 px-3">
+                        <app-icon name="x" [size]="13"></app-icon>
+                        Cancel
+                      </button>
                     </div>
                   }
                 </div>
@@ -78,17 +105,40 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
 
         <!-- Past -->
         @if (!loading && tab === 'past') {
-          <div class="space-y-4">
+          @if (past.length === 0) {
+            <div class="card text-center py-14">
+              <p class="text-slate-400">No past appointments found.</p>
+            </div>
+          }
+          <div class="space-y-3">
             @for (appt of past; track appt.appointmentId) {
               <div class="card">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div class="flex items-center gap-2 mb-1">
-                      <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                  <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <app-icon name="clipboard" [size]="18" class="text-slate-500"></app-icon>
                     </div>
-                    <p class="font-semibold text-gray-900">{{ appt.serviceType }}</p>
-                    <p class="text-sm text-gray-500">{{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }}</p>
+                    <div>
+                      <div class="flex items-center gap-2 mb-0.5">
+                        <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                      </div>
+                      <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
+                      <p class="text-xs text-slate-500 mt-0.5">
+                        {{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }}
+                      </p>
+                    </div>
                   </div>
+                  <!-- Payment status chip -->
+                  @if (paymentStatuses[appt.appointmentId]) {
+                    <span class="text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0"
+                          [ngClass]="paymentStatuses[appt.appointmentId] === 'PAID'
+                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                     : paymentStatuses[appt.appointmentId] === 'REFUNDED'
+                                     ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                     : 'bg-slate-100 text-slate-500 border-slate-200'">
+                      {{ paymentStatuses[appt.appointmentId] }}
+                    </span>
+                  }
                 </div>
               </div>
             }
@@ -97,16 +147,17 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
       </div>
     </app-sidebar-layout>
 
-    <!-- Cancel Modal -->
+    <!-- Cancel Modal — triggers refund automatically -->
     <app-confirm-modal
       [open]="cancelModal"
       title="Cancel Appointment"
-      message="Are you sure you want to cancel this appointment?"
-      confirmText="Yes, Cancel"
+      message="This will cancel your appointment. If eligible, a refund will be automatically processed."
+      confirmText="Cancel Appointment"
       cancelText="Keep It"
       [danger]="true"
       [requireReason]="true"
       reasonLabel="Reason for cancellation"
+      reasonPlaceholder="e.g. Schedule conflict, feeling better…"
       (confirmed)="confirmCancel($event)"
       (cancelled)="cancelModal = false">
     </app-confirm-modal>
@@ -114,38 +165,51 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
     <!-- Reschedule Modal -->
     @if (rescheduleModal && rescheduleAppt) {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="rescheduleModal = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 page-enter max-h-[90vh] overflow-y-auto">
-          <h3 class="text-xl font-serif text-navy-700 mb-5">Reschedule Appointment</h3>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="rescheduleModal = false"></div>
+        <div class="relative bg-white rounded-xl shadow-modal max-w-lg w-full p-6 page-enter max-h-[90vh] overflow-y-auto">
+          <h3 class="font-serif text-xl text-navy-800 mb-5">Reschedule Appointment</h3>
 
-          <!-- Date strip -->
-          <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+          <p class="section-label">Select New Date</p>
+          <div class="flex gap-2 overflow-x-auto pb-2 mb-5">
             @for (day of dateStrip; track day.iso) {
-              <button (click)="loadRescheduleSlots(day.iso, rescheduleAppt!.providerId)"
-                class="flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[55px]"
-                [ngClass]="rescheduleDate === day.iso ? 'border-navy-700 bg-navy-700 text-white' : 'border-gray-200 text-gray-600'">
-                <span class="text-xs">{{ day.dayName }}</span>
-                <span class="text-base font-bold">{{ day.day }}</span>
+              <button (click)="loadRescheduleSlots(day.iso)"
+                class="flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[56px]"
+                [ngClass]="rescheduleDate === day.iso
+                  ? 'border-navy-700 bg-navy-700 text-white'
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300'">
+                <span class="text-xs font-medium">{{ day.dayName }}</span>
+                <span class="text-base font-bold leading-tight">{{ day.day }}</span>
+                <span class="text-xs opacity-70">{{ day.month }}</span>
               </button>
             }
           </div>
 
+          @if (rescheduleDate && rescheduleSlots.length === 0) {
+            <p class="text-slate-400 text-sm text-center py-4">No available slots for this date.</p>
+          }
+
           @if (rescheduleSlots.length > 0) {
-            <div class="grid grid-cols-3 gap-2 mb-4">
+            <p class="section-label">Select Slot</p>
+            <div class="grid grid-cols-3 gap-2 mb-5">
               @for (slot of rescheduleSlots; track slot.slotId) {
                 <button (click)="rescheduleSlotId = slot.slotId"
-                  class="py-2 px-3 rounded-lg text-sm border-2 transition-all"
-                  [ngClass]="rescheduleSlotId === slot.slotId ? 'border-navy-700 bg-navy-700 text-white' : 'border-gray-200 text-gray-700'">
+                  class="py-2.5 px-3 rounded-lg text-sm border-2 transition-all"
+                  [ngClass]="rescheduleSlotId === slot.slotId
+                    ? 'border-navy-700 bg-navy-700 text-white'
+                    : 'border-slate-200 text-slate-600 hover:border-slate-300'">
                   {{ slot.startTime | formatTime }}
                 </button>
               }
             </div>
           }
 
-          <div class="flex gap-3 justify-end">
+          <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
             <button class="btn-secondary" (click)="rescheduleModal = false">Cancel</button>
             <button class="btn-primary" [disabled]="!rescheduleSlotId || rescheduling" (click)="confirmReschedule()">
-              {{ rescheduling ? 'Rescheduling…' : 'Confirm' }}
+              @if (rescheduling) {
+                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              }
+              {{ rescheduling ? 'Rescheduling…' : 'Confirm Reschedule' }}
             </button>
           </div>
         </div>
@@ -156,20 +220,22 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
 export class PatientAppointmentsComponent implements OnInit {
   private auth = inject(AuthService);
   private apptService = inject(AppointmentService);
+  private paymentService = inject(PaymentService);
   private scheduleService = inject(ScheduleService);
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/patient/dashboard' },
-    { label: 'Find Doctors', iconName: 'user', route: '/patient/browse' },
+    { label: 'Dashboard',       iconName: 'home',     route: '/patient/dashboard' },
+    { label: 'Find Doctors',    iconName: 'search',   route: '/patient/browse' },
     { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
-    { label: 'Profile', iconName: 'user', route: '/patient/profile' },
+    { label: 'Profile',         iconName: 'user',     route: '/patient/profile' },
   ];
 
   tab: 'upcoming' | 'past' = 'upcoming';
   upcoming: AppointmentSummary[] = [];
   past: AppointmentSummary[] = [];
   loading = true;
+  paymentStatuses: Record<string, string> = {};
 
   cancelModal = false;
   cancelAppt: AppointmentSummary | null = null;
@@ -181,7 +247,7 @@ export class PatientAppointmentsComponent implements OnInit {
   rescheduleSlotId = '';
   rescheduling = false;
 
-  dateStrip: { iso: string; day: number; dayName: string }[] = [];
+  dateStrip: { iso: string; day: number; month: string; dayName: string }[] = [];
 
   ngOnInit(): void {
     this.buildDateStrip();
@@ -198,6 +264,15 @@ export class PatientAppointmentsComponent implements OnInit {
     this.apptService.getPatientAppointments(userId).subscribe({
       next: (all) => {
         this.past = all.filter(a => a.status !== 'SCHEDULED');
+        // Fetch payment status for each past appointment
+        this.past.forEach(a => {
+          this.paymentService.getStatus(Number(a.appointmentId)).subscribe({
+            next: (res) => {
+              this.paymentStatuses[a.appointmentId] = res.status;
+            },
+            error: () => {}
+          });
+        });
       }
     });
   }
@@ -209,12 +284,31 @@ export class PatientAppointmentsComponent implements OnInit {
 
   confirmCancel(reason: string): void {
     this.cancelModal = false;
-    this.apptService.cancel(this.cancelAppt!.appointmentId, reason).subscribe({
+    const appt = this.cancelAppt!;
+
+    // 1. Cancel the appointment
+    this.apptService.cancel(appt.appointmentId, reason).subscribe({
       next: () => {
-        this.upcoming = this.upcoming.filter(a => a.appointmentId !== this.cancelAppt!.appointmentId);
+        this.upcoming = this.upcoming.filter(a => a.appointmentId !== appt.appointmentId);
         this.toast.success('Appointment cancelled.');
+
+        // 2. Trigger refund automatically
+        this.paymentService.refund(Number(appt.appointmentId), reason).subscribe({
+          next: (res) => {
+            if (res.status === 'REFUNDED') {
+              this.toast.success(`Refund processed. Ref: ${res.refundTransactionId}`);
+            } else if (res.notes?.includes('outside')) {
+              this.toast.warning('Cancellation outside refund window — no refund issued.');
+            } else if (res.notes?.includes('CASH')) {
+              this.toast.info('Cash appointment cancelled — no charge was made.');
+            }
+          },
+          error: () => {
+            this.toast.warning('Refund could not be processed automatically. Contact support.');
+          }
+        });
       },
-      error: () => this.toast.error('Failed to cancel.')
+      error: () => this.toast.error('Failed to cancel appointment.')
     });
   }
 
@@ -223,11 +317,12 @@ export class PatientAppointmentsComponent implements OnInit {
     this.rescheduleModal = true;
     this.rescheduleSlots = [];
     this.rescheduleSlotId = '';
+    this.rescheduleDate = '';
   }
 
-  loadRescheduleSlots(date: string, providerId: string): void {
+  loadRescheduleSlots(date: string): void {
     this.rescheduleDate = date;
-    this.scheduleService.getAvailableByDate(providerId, date).subscribe({
+    this.scheduleService.getAvailableByDate(this.rescheduleAppt!.providerId, date).subscribe({
       next: (s) => this.rescheduleSlots = s
     });
   }
@@ -239,8 +334,9 @@ export class PatientAppointmentsComponent implements OnInit {
         this.rescheduling = false;
         this.rescheduleModal = false;
         this.toast.success('Appointment rescheduled!');
-        const idx = this.upcoming.findIndex(a => a.appointmentId === this.rescheduleAppt!.appointmentId);
-        if (idx !== -1) this.upcoming[idx] = { ...this.upcoming[idx], slotId: this.rescheduleSlotId } as any;
+        // Refresh upcoming list
+        const userId = this.auth.currentUser()?.userId!;
+        this.apptService.getPatientUpcoming(userId).subscribe(a => this.upcoming = a);
       },
       error: () => { this.rescheduling = false; this.toast.error('Reschedule failed.'); }
     });
@@ -254,6 +350,7 @@ export class PatientAppointmentsComponent implements OnInit {
       this.dateStrip.push({
         iso: d.toISOString().split('T')[0],
         day: d.getDate(),
+        month: d.toLocaleString('default', { month: 'short' }),
         dayName: d.toLocaleString('default', { weekday: 'short' }),
       });
     }

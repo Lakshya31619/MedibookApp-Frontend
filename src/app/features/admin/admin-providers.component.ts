@@ -120,9 +120,10 @@ export class AdminProvidersComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/admin/dashboard' },
+    { label: 'Dashboard', iconName: 'home', route: '/admin/dashboard' },
     { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
-    { label: 'All Providers', iconName: 'user', route: '/admin/providers' },
+    { label: 'All Providers', iconName: 'users', route: '/admin/providers' },
+    { label: 'Payments', iconName: 'dollar-sign', route: '/admin/payments' },
   ];
 
   providers: ProviderResponse[] = [];

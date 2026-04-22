@@ -64,8 +64,8 @@ export class PatientProfileComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/patient/dashboard' },
-    { label: 'Find Doctors', iconName: 'user', route: '/patient/browse' },
+    { label: 'Dashboard', iconName: 'home', route: '/patient/dashboard' },
+    { label: 'Find Doctors', iconName: 'search', route: '/patient/browse' },
     { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
     { label: 'Profile', iconName: 'user', route: '/patient/profile' },
   ];

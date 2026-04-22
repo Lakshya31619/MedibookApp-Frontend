@@ -228,6 +228,7 @@ export class ProviderDetailComponent implements OnInit {
         serviceType: this.serviceType,
         mode: this.mode,
         notes: this.notes,
+        fee: this.provider!.consultationFee,
       }
     });
   }

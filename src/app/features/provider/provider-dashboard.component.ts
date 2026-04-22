@@ -12,7 +12,7 @@ import { IconComponent } from '../../shared/components/icon.component';
 @Component({
   selector: 'app-provider-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe, IconComponent],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, IconComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -158,9 +158,10 @@ export class ProviderDashboardComponent implements OnInit {
   private apptService = inject(AppointmentService);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Dashboard', iconName: 'home', route: '/provider/dashboard' },
     { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
-    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
+    { label: 'Slot Management', iconName: 'grid', route: '/provider/slots' },
+    { label: 'Earnings', iconName: 'trending-up', route: '/provider/earnings' },
     { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 

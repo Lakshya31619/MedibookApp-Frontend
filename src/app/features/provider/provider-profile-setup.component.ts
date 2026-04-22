@@ -90,10 +90,11 @@ export class ProviderProfileSetupComponent {
   private router = inject(Router);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'info', route: '/provider/dashboard' },
+    { label: 'Dashboard', iconName: 'home', route: '/provider/dashboard' },
     { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
-    { label: 'Slot Management', iconName: 'calendar', route: '/provider/slots' },
-    { label: 'My Profile', icon: '👤', route: '/provider/profile' },
+    { label: 'Slot Management', iconName: 'grid', route: '/provider/slots' },
+    { label: 'Earnings', iconName: 'trending-up', route: '/provider/earnings' },
+    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 
   form = {
