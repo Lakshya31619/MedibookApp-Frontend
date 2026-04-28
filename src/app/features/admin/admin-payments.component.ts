@@ -168,7 +168,9 @@ export class AdminPaymentsComponent implements OnInit {
     { label: 'Dashboard',        iconName: 'home',        route: '/admin/dashboard' },
     { label: 'Pending Approvals',iconName: 'clock',       route: '/admin/pending' },
     { label: 'All Providers',    iconName: 'users',       route: '/admin/providers' },
+    { label: 'Reviews',          iconName: 'star',        route: '/admin/reviews' },
     { label: 'Payments',         iconName: 'dollar-sign', route: '/admin/payments' },
+    { label: 'My Profile',       iconName: 'user',         route: '/admin/profile' },
   ];
 
   revenue: PlatformRevenue | null = null;

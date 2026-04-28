@@ -122,6 +122,7 @@ export class ProviderDirectoryComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   providers: ProviderSummary[] = [];
+  private allProviders: ProviderSummary[] = []; // full list for client-side name filtering
   loading = true;
   searchQuery = '';
   activeSpec = '';
@@ -136,13 +137,35 @@ export class ProviderDirectoryComponent implements OnInit {
   loadAll(): void {
     this.loading = true;
     this.providerService.getAll().subscribe({
-      next: (p) => { this.providers = p; this.loading = false; },
+      next: (p) => {
+        this.allProviders = p;
+        this.providers = p;
+        this.loading = false;
+      },
       error: () => { this.loading = false; }
     });
   }
 
   onSearch(): void {
-    if (!this.searchQuery.trim()) { this.loadAll(); return; }
+    const q = this.searchQuery.trim().toLowerCase();
+    this.activeSpec = '';
+
+    if (!q) { this.providers = this.allProviders; return; }
+
+    // If we already have all providers loaded, filter client-side by name,
+    // specialization, clinic name, and clinic address — this covers doctor name search
+    // which the backend query misses (providerName lives in auth-service, not provider DB).
+    if (this.allProviders.length) {
+      this.providers = this.allProviders.filter(p =>
+        (p.providerName  || '').toLowerCase().includes(q) ||
+        (p.specialization || '').toLowerCase().includes(q) ||
+        (p.clinicName    || '').toLowerCase().includes(q) ||
+        (p.clinicAddress || '').toLowerCase().includes(q)
+      );
+      return;
+    }
+
+    // Fallback: hit backend search (covers specialization/clinic only)
     this.loading = true;
     this.providerService.search(this.searchQuery).subscribe({
       next: (p) => { this.providers = p; this.loading = false; },
@@ -152,7 +175,22 @@ export class ProviderDirectoryComponent implements OnInit {
 
   filterSpec(spec: string): void {
     this.activeSpec = spec;
-    if (!spec) { this.loadAll(); return; }
+    this.searchQuery = '';
+
+    if (!spec) {
+      this.providers = this.allProviders.length ? this.allProviders : [];
+      if (!this.allProviders.length) this.loadAll();
+      return;
+    }
+
+    // Filter client-side if we already have all providers
+    if (this.allProviders.length) {
+      this.providers = this.allProviders.filter(
+        p => p.specialization?.toLowerCase() === spec.toLowerCase()
+      );
+      return;
+    }
+
     this.loading = true;
     this.providerService.bySpecialization(spec).subscribe({
       next: (p) => { this.providers = p; this.loading = false; },

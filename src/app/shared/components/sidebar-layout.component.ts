@@ -1,9 +1,10 @@
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { IconComponent } from './icon.component';
+import { NotificationBellComponent } from './notification-bell.component';
 
 export interface NavItem {
   label: string;
@@ -15,7 +16,7 @@ export interface NavItem {
 @Component({
   selector: 'app-sidebar-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, IconComponent],
+  imports: [CommonModule, RouterModule, IconComponent, NotificationBellComponent],
   template: `
     <div class="flex h-screen bg-gray-50 overflow-hidden">
       <!-- Mobile overlay -->
@@ -26,8 +27,7 @@ export interface NavItem {
       <!-- Sidebar -->
       <aside
         class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-navy-700 flex flex-col transition-transform duration-300 ease-in-out"
-        [class.-translate-x-full]="!mobileOpen()"
-        [class.lg:translate-x-0]="true">
+        [ngClass]="mobileOpen() ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
         <!-- Logo -->
         <div class="flex items-center gap-2.5 px-6 py-5 border-b border-white/10">
@@ -51,6 +51,8 @@ export interface NavItem {
               <p class="text-white text-sm font-medium truncate">{{ auth.currentUser()?.fullName }}</p>
               <p class="text-navy-200 text-xs capitalize">{{ auth.currentUser()?.role?.toLowerCase() }}</p>
             </div>
+            <!-- Notification Bell -->
+            <app-notification-bell></app-notification-bell>
           </div>
         </div>
 
@@ -65,7 +67,7 @@ export interface NavItem {
               @if (item.iconName) {
                 <app-icon [name]="item.iconName" sizeClass="w-5 h-5"></app-icon>
               } @else if (item.icon) {
-                <span class="text-lg w-6 text-center">{{ item.icon }}</span>
+                <app-icon [name]="item.icon" sizeClass="w-5 h-5"></app-icon>
               }
               <span>{{ item.label }}</span>
             </a>
@@ -108,15 +110,25 @@ export class SidebarLayoutComponent implements OnInit {
   mobileOpen = signal(false);
   profilePicUrl = signal<string | null>(null);
 
+  constructor() {
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (user && user.role !== 'PROVIDER' && user.profilePicUrl) {
+        this.profilePicUrl.set(user.profilePicUrl);
+      }
+    });
+  }
+
   get initials(): string {
     const name = this.auth.currentUser()?.fullName || '';
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
   ngOnInit(): void {
-    // Load profile picture for providers
     const currentUser = this.auth.currentUser();
-    if (currentUser && currentUser.role === 'PROVIDER') {
+    if (!currentUser) return;
+
+    if (currentUser.role === 'PROVIDER') {
       this.providerService.getMyProfile(currentUser.userId).subscribe({
         next: (profile) => {
           if (profile.profilePicUrl) {
@@ -124,8 +136,25 @@ export class SidebarLayoutComponent implements OnInit {
           }
         },
         error: () => {
-          // Silently fail - just show initials
+          if (currentUser.profilePicUrl) {
+            this.profilePicUrl.set(currentUser.profilePicUrl);
+          }
         }
+      });
+    } else {
+      if (currentUser.profilePicUrl) {
+        this.profilePicUrl.set(currentUser.profilePicUrl);
+      }
+      this.auth.getProfile(currentUser.userId).subscribe({
+        next: (profile) => {
+          if (profile.profilePicUrl) {
+            this.profilePicUrl.set(profile.profilePicUrl);
+            const updated = { ...currentUser, profilePicUrl: profile.profilePicUrl };
+            this.auth.currentUser.set(updated);
+            localStorage.setItem('medibook_user', JSON.stringify(updated));
+          }
+        },
+        error: () => {}
       });
     }
   }

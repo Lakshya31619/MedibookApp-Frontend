@@ -108,8 +108,10 @@ export class ProviderProfileSetupComponent {
     this.loading = true;
     this.error = '';
     const userId = this.auth.currentUser()!.userId;
+    const providerName = this.auth.currentUser()!.fullName;
     this.providerService.register({
       userId,
+      providerName,
       specialization: this.form.specialization,
       qualification: this.form.qualification,
       experienceYears: this.form.experienceYears,

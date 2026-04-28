@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'appointments', loadComponent: () => import('./features/patient/patient-appointments.component').then(m => m.PatientAppointmentsComponent) },
       { path: 'book',         loadComponent: () => import('./features/patient/patient-book.component').then(m => m.PatientBookComponent) },
       { path: 'profile',      loadComponent: () => import('./features/patient/patient-profile.component').then(m => m.PatientProfileComponent) },
+      { path: 'notifications',loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
   },
@@ -34,9 +35,10 @@ export const routes: Routes = [
       { path: 'dashboard',    loadComponent: () => import('./features/provider/provider-dashboard.component').then(m => m.ProviderDashboardComponent) },
       { path: 'appointments', loadComponent: () => import('./features/provider/provider-appointments.component').then(m => m.ProviderAppointmentsComponent) },
       { path: 'slots',        loadComponent: () => import('./features/provider/provider-slots.component').then(m => m.ProviderSlotsComponent) },
-      { path: 'earnings',     loadComponent: () => import('./features/provider/provider-earnings.component').then(m => m.ProviderEarningsComponent) },   // ← NEW
+      { path: 'earnings',     loadComponent: () => import('./features/provider/provider-earnings.component').then(m => m.ProviderEarningsComponent) },
       { path: 'profile',      loadComponent: () => import('./features/provider/provider-profile.component').then(m => m.ProviderProfileComponent) },
       { path: 'profile-setup',loadComponent: () => import('./features/provider/provider-profile-setup.component').then(m => m.ProviderProfileSetupComponent) },
+      { path: 'notifications',loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
   },
@@ -46,11 +48,14 @@ export const routes: Routes = [
     path: 'admin',
     canActivate: [roleGuard('ADMIN')],
     children: [
-      { path: 'dashboard', loadComponent: () => import('./features/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
-      { path: 'pending',   loadComponent: () => import('./features/admin/admin-pending.component').then(m => m.AdminPendingComponent) },
-      { path: 'providers', loadComponent: () => import('./features/admin/admin-providers.component').then(m => m.AdminProvidersComponent) },
+      { path: 'dashboard',     loadComponent: () => import('./features/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
+      { path: 'pending',       loadComponent: () => import('./features/admin/admin-pending.component').then(m => m.AdminPendingComponent) },
+      { path: 'providers',     loadComponent: () => import('./features/admin/admin-providers.component').then(m => m.AdminProvidersComponent) },
       { path: 'providers/:id', loadComponent: () => import('./features/admin/admin-provider-detail.component').then(m => m.AdminProviderDetailComponent) },
-      { path: 'payments',  loadComponent: () => import('./features/admin/admin-payments.component').then(m => m.AdminPaymentsComponent) },   // ← NEW
+      { path: 'profile',       loadComponent: () => import('./features/admin/admin-profile.component').then(m => m.AdminProfileComponent) },
+      { path: 'reviews',       loadComponent: () => import('./features/admin/admin-reviews.component').then(m => m.AdminReviewsComponent) },   // ← NEW
+      { path: 'payments',      loadComponent: () => import('./features/admin/admin-payments.component').then(m => m.AdminPaymentsComponent) },
+      { path: 'notifications', loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
   },

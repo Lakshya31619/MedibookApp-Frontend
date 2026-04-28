@@ -68,7 +68,7 @@ export class AuthService {
     try {
       const payload = this.decodeJwt(token);
       const user: User = {
-        userId: (payload['userId'] as string) || (payload['sub'] as string),
+        userId: String(payload['userId'] ?? ''),
         fullName: (payload['fullName'] as string) || (payload['name'] as string) || '',
         email: (payload['sub'] as string),
         role: payload['role'] as UserRole,

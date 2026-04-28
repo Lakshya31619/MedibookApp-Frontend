@@ -1,27 +1,30 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { StarRatingComponent } from '../../shared/components/star-rating.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
-import { PaymentService } from '../../core/services/payment.service';
+import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppointmentSummary } from '../../core/models';
+import { ReviewResponse } from '../../core/review.models';
 import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
 
 @Component({
   selector: 'app-provider-appointments',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarLayoutComponent, IconComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
+  imports: [CommonModule, SidebarLayoutComponent, IconComponent, StarRatingComponent,
+            ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
 
         <div class="mb-6">
           <h1 class="page-title">Appointments</h1>
-          <p class="page-subtitle">Manage your patient appointments</p>
+          <p class="page-subtitle">Manage your patient appointments and reviews</p>
         </div>
 
         <!-- Tabs -->
@@ -47,63 +50,90 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
         @if (!loading) {
           @if ((tab === 'today' ? today : all).length === 0) {
             <div class="card text-center py-14">
-              <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <app-icon name="calendar" [size]="22" class="text-slate-400"></app-icon>
-              </div>
+              <app-icon name="calendar" [size]="28" class="text-slate-300 mx-auto mb-3"></app-icon>
               <p class="text-slate-400">No appointments found.</p>
             </div>
           }
           <div class="space-y-3">
             @for (appt of (tab === 'today' ? today : all); track appt.appointmentId) {
               <div class="card">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                         [ngClass]="appt.status === 'SCHEDULED' ? 'bg-navy-50' : 'bg-slate-100'">
-                      <app-icon [name]="appt.modeOfConsultation === 'VIDEO' ? 'video' : 'stethoscope'"
-                                [size]="18"
-                                [ngClass]="appt.status === 'SCHEDULED' ? 'text-navy-600' : 'text-slate-400'">
-                      </app-icon>
-                    </div>
-                    <div>
-                      <div class="flex items-center gap-2 mb-0.5">
-                        <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
-                        <!-- Payment status badge -->
-                        @if (paymentStatuses[appt.appointmentId]) {
-                          <span class="text-xs font-medium px-2 py-0.5 rounded-full border"
-                                [ngClass]="paymentStatuses[appt.appointmentId] === 'PAID'
-                                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                           : paymentStatuses[appt.appointmentId] === 'PENDING'
-                                           ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                           : 'bg-slate-100 text-slate-500 border-slate-200'">
-                            {{ paymentStatuses[appt.appointmentId] }}
-                          </span>
-                        }
+                <div class="flex flex-col gap-3">
+                  <!-- Appointment row -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                           [ngClass]="appt.status === 'SCHEDULED' ? 'bg-navy-50' : 'bg-slate-100'">
+                        <app-icon [name]="appt.modeOfConsultation === 'VIDEO' ? 'video' : 'stethoscope'"
+                                  [size]="18"
+                                  [ngClass]="appt.status === 'SCHEDULED' ? 'text-navy-600' : 'text-slate-400'">
+                        </app-icon>
                       </div>
-                      <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
-                      <p class="text-xs text-slate-500 mt-0.5">
-                        {{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }} – {{ appt.endTime | formatTime }}
-                      </p>
+                      <div>
+                        <div class="flex items-center gap-2 mb-0.5">
+                          <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                        </div>
+                        <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                          {{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }} – {{ appt.endTime | formatTime }}
+                        </p>
+                      </div>
                     </div>
+
+                    @if (appt.status === 'SCHEDULED') {
+                      <div class="flex gap-2 flex-shrink-0">
+                        <button (click)="markComplete(appt)" class="btn-primary text-xs py-1.5 px-3">
+                          <app-icon name="check" [size]="13"></app-icon> Complete
+                        </button>
+                        <button (click)="markNoShow(appt)" class="btn-secondary text-xs py-1.5 px-3">
+                          No-Show
+                        </button>
+                      </div>
+                    }
                   </div>
 
-                  @if (appt.status === 'SCHEDULED') {
-                    <div class="flex flex-wrap gap-2 flex-shrink-0">
-                      <!-- Confirm cash if payment is PENDING -->
-                      @if (paymentStatuses[appt.appointmentId] === 'PENDING') {
-                        <button (click)="confirmCash(appt)"
-                                class="btn-success text-xs py-1.5 px-3">
-                          <app-icon name="dollar-sign" [size]="13"></app-icon>
-                          Collect Cash
-                        </button>
-                      }
-                      <button (click)="markComplete(appt)" class="btn-primary text-xs py-1.5 px-3">
-                        <app-icon name="check" [size]="13"></app-icon>
-                        Complete
-                      </button>
-                      <button (click)="markNoShow(appt)" class="btn-secondary text-xs py-1.5 px-3">
-                        No-Show
-                      </button>
+                  <!-- Review section for COMPLETED appointments -->
+                  @if (appt.status === 'COMPLETED' && existingReviews[appt.appointmentId]) {
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 ml-13">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1">
+                          <div class="flex items-center gap-2 mb-1">
+                            <app-star-rating [value]="existingReviews[appt.appointmentId].rating" [size]="14"></app-star-rating>
+                            @if (existingReviews[appt.appointmentId].isVerified) {
+                              <span class="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                                <app-icon name="shield-check" [size]="11"></app-icon> Verified
+                              </span>
+                            }
+                            @if (existingReviews[appt.appointmentId].isFlagged) {
+                              <span class="text-xs text-red-500 font-medium flex items-center gap-1">
+                                <app-icon name="alert-circle" [size]="11"></app-icon> Flagged
+                              </span>
+                            }
+                          </div>
+                          @if (existingReviews[appt.appointmentId].comment) {
+                            <p class="text-xs text-slate-600 leading-relaxed">{{ existingReviews[appt.appointmentId].comment }}</p>
+                          }
+                        </div>
+                        <!-- Review action buttons -->
+                        <div class="flex gap-1.5 flex-shrink-0">
+                          @if (!existingReviews[appt.appointmentId].isVerified) {
+                            <button (click)="verifyReview(existingReviews[appt.appointmentId])"
+                                    class="text-xs text-emerald-600 hover:underline font-medium px-2 py-1 rounded hover:bg-emerald-50 transition-colors">
+                              Verify
+                            </button>
+                          }
+                          @if (!existingReviews[appt.appointmentId].isFlagged) {
+                            <button (click)="openFlag(existingReviews[appt.appointmentId])"
+                                    class="text-xs text-amber-600 hover:underline font-medium px-2 py-1 rounded hover:bg-amber-50 transition-colors">
+                              Flag
+                            </button>
+                          } @else {
+                            <button (click)="unflagReview(existingReviews[appt.appointmentId])"
+                                    class="text-xs text-slate-500 hover:underline font-medium px-2 py-1 rounded hover:bg-slate-100 transition-colors">
+                              Unflag
+                            </button>
+                          }
+                        </div>
+                      </div>
                     </div>
                   }
                 </div>
@@ -113,13 +143,28 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
         }
       </div>
     </app-sidebar-layout>
+
+    <!-- Flag Review Modal -->
+    <app-confirm-modal
+      [open]="flagModal"
+      title="Flag Review"
+      message="Flag this review for moderation. Provide a reason below."
+      confirmText="Flag Review"
+      cancelText="Cancel"
+      [danger]="false"
+      [requireReason]="true"
+      reasonLabel="Reason for flagging"
+      reasonPlaceholder="e.g. Inappropriate content, spam, fake review…"
+      (confirmed)="confirmFlag($event)"
+      (cancelled)="flagModal = false">
+    </app-confirm-modal>
   `
 })
 export class ProviderAppointmentsComponent implements OnInit {
   private auth = inject(AuthService);
-  private providerService = inject(ProviderService);
-  private apptService = inject(AppointmentService);
-  private paymentService = inject(PaymentService);
+  private providerSvc = inject(ProviderService);
+  private apptSvc = inject(AppointmentService);
+  private reviewSvc = inject(ReviewService);
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
@@ -135,19 +180,19 @@ export class ProviderAppointmentsComponent implements OnInit {
   all: AppointmentSummary[] = [];
   loading = true;
   providerId = '';
-  paymentStatuses: Record<string, string> = {};
+
+  existingReviews: Record<string, ReviewResponse> = {};
+
+  flagModal = false;
+  flagTarget: ReviewResponse | null = null;
 
   ngOnInit(): void {
     const userId = this.auth.currentUser()!.userId;
-    this.providerService.getMyProfile(userId).subscribe({
+    this.providerSvc.getMyProfile(userId).subscribe({
       next: (p) => {
         this.providerId = p.providerId;
-        this.apptService.getProviderToday(p.providerId).subscribe({
-          next: (a) => {
-            this.today = a;
-            this.loading = false;
-            this.loadPaymentStatuses(a);
-          },
+        this.apptSvc.getProviderToday(p.providerId).subscribe({
+          next: (a) => { this.today = a; this.loading = false; this.loadReviews(a); },
           error: () => { this.loading = false; }
         });
       },
@@ -157,41 +202,67 @@ export class ProviderAppointmentsComponent implements OnInit {
 
   loadAll(): void {
     if (this.all.length || !this.providerId) return;
-    this.apptService.getProviderAppointments(this.providerId).subscribe({
-      next: (a) => { this.all = a; this.loadPaymentStatuses(a); }
+    this.apptSvc.getProviderAppointments(this.providerId).subscribe({
+      next: (a) => { this.all = a; this.loadReviews(a); }
     });
   }
 
-  loadPaymentStatuses(appointments: AppointmentSummary[]): void {
-    appointments.forEach(a => {
-      this.paymentService.getStatus(Number(a.appointmentId)).subscribe({
-        next: (res) => { this.paymentStatuses[a.appointmentId] = res.status; },
-        error: () => {}
+  loadReviews(appointments: AppointmentSummary[]): void {
+    appointments
+      .filter(a => a.status === 'COMPLETED')
+      .forEach(a => {
+        this.reviewSvc.getByAppointment(Number(a.appointmentId)).subscribe({
+          next: (r) => { this.existingReviews[a.appointmentId] = r; },
+          error: () => {}
+        });
       });
-    });
   }
 
   markComplete(appt: AppointmentSummary): void {
-    this.apptService.complete(appt.appointmentId).subscribe({
+    this.apptSvc.complete(appt.appointmentId).subscribe({
       next: () => { this.updateStatus(appt.appointmentId, 'COMPLETED'); this.toast.success('Marked as completed.'); },
       error: () => this.toast.error('Failed.')
     });
   }
 
   markNoShow(appt: AppointmentSummary): void {
-    this.apptService.markNoShow(appt.appointmentId).subscribe({
+    this.apptSvc.markNoShow(appt.appointmentId).subscribe({
       next: () => { this.updateStatus(appt.appointmentId, 'NO_SHOW'); this.toast.info('Marked as no-show.'); },
       error: () => this.toast.error('Failed.')
     });
   }
 
-  confirmCash(appt: AppointmentSummary): void {
-    this.paymentService.confirmCash(Number(appt.appointmentId)).subscribe({
+  verifyReview(review: ReviewResponse): void {
+    this.reviewSvc.verifyReview(review.reviewId).subscribe({
       next: () => {
-        this.paymentStatuses[appt.appointmentId] = 'PAID';
-        this.toast.success('Cash payment confirmed!');
+        this.existingReviews[review.appointmentId] = { ...review, isVerified: true };
+        this.toast.success('Review verified.');
       },
-      error: (err) => this.toast.error(err.error?.error || 'Failed to confirm cash.')
+      error: () => this.toast.error('Failed.')
+    });
+  }
+
+  openFlag(review: ReviewResponse): void { this.flagTarget = review; this.flagModal = true; }
+
+  confirmFlag(reason: string): void {
+    this.flagModal = false;
+    const review = this.flagTarget!;
+    this.reviewSvc.flagReview(review.reviewId, reason).subscribe({
+      next: () => {
+        this.existingReviews[review.appointmentId] = { ...review, isFlagged: true, flagReason: reason };
+        this.toast.success('Review flagged for moderation.');
+      },
+      error: () => this.toast.error('Failed.')
+    });
+  }
+
+  unflagReview(review: ReviewResponse): void {
+    this.reviewSvc.unflagReview(review.reviewId).subscribe({
+      next: () => {
+        this.existingReviews[review.appointmentId] = { ...review, isFlagged: false, flagReason: null };
+        this.toast.info('Review unflagged.');
+      },
+      error: () => this.toast.error('Failed.')
     });
   }
 
@@ -200,7 +271,6 @@ export class ProviderAppointmentsComponent implements OnInit {
       const idx = list.findIndex(a => a.appointmentId === id);
       if (idx !== -1) list[idx] = { ...list[idx], status: status as any };
     };
-    update(this.today);
-    update(this.all);
+    update(this.today); update(this.all);
   }
 }

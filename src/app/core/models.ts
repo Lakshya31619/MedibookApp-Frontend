@@ -71,6 +71,7 @@ export interface ProviderResponse {
 
 export interface ProviderRegisterRequest {
   userId: string;
+  providerName?: string;
   specialization: string;
   qualification: string;
   experienceYears: number;

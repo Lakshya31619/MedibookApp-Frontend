@@ -4,20 +4,23 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { StarRatingComponent } from '../../shared/components/star-rating.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { AuthService } from '../../core/services/auth.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { ScheduleService } from '../../core/services/schedule.service';
+import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppointmentSummary, SlotSummary } from '../../core/models';
+import { ReviewResponse } from '../../core/review.models';
 import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
 
 @Component({
   selector: 'app-patient-appointments',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, SidebarLayoutComponent, IconComponent,
-            ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
+            StarRatingComponent, ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -139,8 +142,34 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
                       {{ paymentStatuses[appt.appointmentId] }}
                     </span>
                   }
+                  <!-- Review button -->
+                  @if (appt.status === 'COMPLETED' && !existingReviews[appt.appointmentId]) {
+                    <button (click)="openReviewModal(appt)" class="btn-primary text-xs py-1.5 px-3 flex-shrink-0 flex items-center gap-1">
+                      <app-icon name="star" [size]="13"></app-icon>
+                      Review
+                    </button>
+                  }
                 </div>
               </div>
+              <!-- Display existing review -->
+              @if (appt.status === 'COMPLETED' && existingReviews[appt.appointmentId]) {
+                <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <app-star-rating [value]="existingReviews[appt.appointmentId].rating" [size]="14"></app-star-rating>
+                      </div>
+                      @if (existingReviews[appt.appointmentId].comment) {
+                        <p class="text-xs text-slate-600">{{ existingReviews[appt.appointmentId].comment }}</p>
+                      }
+                      <p class="text-xs text-slate-400 mt-1">Submitted on {{ existingReviews[appt.appointmentId].reviewDate | formatDate }}</p>
+                    </div>
+                    <button (click)="openEditReview(appt)" class="text-xs text-blue-600 hover:underline font-medium">
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              }
             }
           </div>
         }
@@ -161,6 +190,73 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
       (confirmed)="confirmCancel($event)"
       (cancelled)="cancelModal = false">
     </app-confirm-modal>
+
+    <!-- Review Modal -->
+    @if (reviewModal && reviewAppt) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="reviewModal = false"></div>
+        <div class="relative bg-white rounded-xl shadow-modal max-w-lg w-full p-6 page-enter max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-serif text-xl text-navy-800">{{ existingReviews[reviewAppt.appointmentId] ? 'Edit' : 'Leave a' }} Review</h3>
+            <button (click)="reviewModal = false" class="text-gray-400 hover:text-gray-600">
+              <app-icon name="x" [size]="20"></app-icon>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Service info -->
+            <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <div class="w-10 h-10 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <app-icon name="stethoscope" [size]="18" class="text-navy-700"></app-icon>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900">{{ reviewAppt.serviceType }}</p>
+                <p class="text-xs text-slate-500">{{ reviewAppt.appointmentDate | formatDate }}</p>
+              </div>
+            </div>
+
+            <!-- Rating -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">How would you rate this appointment?</label>
+              <div class="flex justify-center py-2">
+                <app-star-rating 
+                  [value]="reviewRating" 
+                  [interactive]="true"
+                  [size]="32"
+                  (valueChange)="reviewRating = $event">
+                </app-star-rating>
+              </div>
+            </div>
+
+            <!-- Comment -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Comments (optional)</label>
+              <textarea 
+                [(ngModel)]="reviewComment" 
+                placeholder="Share your experience with this appointment…"
+                class="input-field min-h-[100px] resize-none"></textarea>
+              <p class="text-xs text-slate-400 mt-1">{{ reviewComment.length || 0 }}/500 characters</p>
+            </div>
+
+            <!-- Anonymous toggle -->
+            <div class="flex items-center gap-2">
+              <input type="checkbox" [(ngModel)]="reviewAnonymous" id="anonymous" class="w-4 h-4 rounded cursor-pointer">
+              <label for="anonymous" class="text-sm text-slate-600 cursor-pointer">Post this review anonymously</label>
+            </div>
+          </div>
+
+          <div class="flex gap-3 justify-end pt-4 border-t border-slate-100 mt-4">
+            <button class="btn-secondary" (click)="reviewModal = false">Cancel</button>
+            <button class="btn-primary" [disabled]="reviewRating === 0 || submittingReview" (click)="submitReview()">
+              @if (submittingReview) {
+                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              }
+              {{ submittingReview ? 'Submitting…' : (existingReviews[reviewAppt.appointmentId] ? 'Update Review' : 'Submit Review') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Reschedule Modal -->
     @if (rescheduleModal && rescheduleAppt) {
@@ -222,6 +318,7 @@ export class PatientAppointmentsComponent implements OnInit {
   private apptService = inject(AppointmentService);
   private paymentService = inject(PaymentService);
   private scheduleService = inject(ScheduleService);
+  private reviewService = inject(ReviewService);
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [
@@ -236,6 +333,7 @@ export class PatientAppointmentsComponent implements OnInit {
   past: AppointmentSummary[] = [];
   loading = true;
   paymentStatuses: Record<string, string> = {};
+  existingReviews: Record<string, ReviewResponse> = {};
 
   cancelModal = false;
   cancelAppt: AppointmentSummary | null = null;
@@ -246,6 +344,13 @@ export class PatientAppointmentsComponent implements OnInit {
   rescheduleSlots: SlotSummary[] = [];
   rescheduleSlotId = '';
   rescheduling = false;
+
+  reviewModal = false;
+  reviewAppt: AppointmentSummary | null = null;
+  reviewRating = 0;
+  reviewComment = '';
+  reviewAnonymous = false;
+  submittingReview = false;
 
   dateStrip: { iso: string; day: number; month: string; dayName: string }[] = [];
 
@@ -264,7 +369,7 @@ export class PatientAppointmentsComponent implements OnInit {
     this.apptService.getPatientAppointments(userId).subscribe({
       next: (all) => {
         this.past = all.filter(a => a.status !== 'SCHEDULED');
-        // Fetch payment status for each past appointment
+        // Fetch payment status and reviews for each past appointment
         this.past.forEach(a => {
           this.paymentService.getStatus(Number(a.appointmentId)).subscribe({
             next: (res) => {
@@ -272,8 +377,18 @@ export class PatientAppointmentsComponent implements OnInit {
             },
             error: () => {}
           });
+          // Load existing reviews
+          if (a.status === 'COMPLETED') {
+            this.reviewService.getByAppointment(Number(a.appointmentId)).subscribe({
+              next: (review) => {
+                this.existingReviews[a.appointmentId] = review;
+              },
+              error: () => {}
+            });
+          }
         });
-      }
+      },
+      error: () => { this.toast.error('Failed to load past appointments.'); }
     });
   }
 
@@ -340,6 +455,74 @@ export class PatientAppointmentsComponent implements OnInit {
       },
       error: () => { this.rescheduling = false; this.toast.error('Reschedule failed.'); }
     });
+  }
+
+  openReviewModal(appt: AppointmentSummary): void {
+    this.reviewAppt = appt;
+    const existing = this.existingReviews[appt.appointmentId];
+    if (existing) {
+      this.reviewRating = existing.rating;
+      this.reviewComment = existing.comment || '';
+      this.reviewAnonymous = existing.isAnonymous;
+    } else {
+      this.reviewRating = 0;
+      this.reviewComment = '';
+      this.reviewAnonymous = false;
+    }
+    this.reviewModal = true;
+  }
+
+  openEditReview(appt: AppointmentSummary): void {
+    this.openReviewModal(appt);
+  }
+
+  submitReview(): void {
+    if (!this.reviewAppt || this.reviewRating === 0) return;
+
+    this.submittingReview = true;
+    const userId = this.auth.currentUser()?.userId!;
+    const existing = this.existingReviews[this.reviewAppt.appointmentId];
+
+    if (existing) {
+      // Update existing review
+      this.reviewService.updateReview(existing.reviewId, {
+        rating: this.reviewRating,
+        comment: this.reviewComment || undefined,
+        isAnonymous: this.reviewAnonymous
+      }).subscribe({
+        next: (updated) => {
+          this.submittingReview = false;
+          this.existingReviews[this.reviewAppt!.appointmentId] = updated;
+          this.reviewModal = false;
+          this.toast.success('Review updated successfully!');
+        },
+        error: () => {
+          this.submittingReview = false;
+          this.toast.error('Failed to update review.');
+        }
+      });
+    } else {
+      // Submit new review
+      this.reviewService.addReview({
+        appointmentId: Number(this.reviewAppt.appointmentId),
+        patientId: Number(userId),
+        providerId: Number(this.reviewAppt.providerId),
+        rating: this.reviewRating,
+        comment: this.reviewComment || undefined,
+        isAnonymous: this.reviewAnonymous
+      }).subscribe({
+        next: (review) => {
+          this.submittingReview = false;
+          this.existingReviews[this.reviewAppt!.appointmentId] = review;
+          this.reviewModal = false;
+          this.toast.success('Thank you for your review!');
+        },
+        error: () => {
+          this.submittingReview = false;
+          this.toast.error('Failed to submit review.');
+        }
+      });
+    }
   }
 
   buildDateStrip(): void {

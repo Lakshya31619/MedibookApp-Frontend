@@ -12,7 +12,7 @@ import { IconComponent } from '../../shared/components/icon.component';
 @Component({
   selector: 'app-provider-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, IconComponent],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe, IconComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
