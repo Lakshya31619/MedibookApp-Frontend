@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
@@ -12,7 +13,7 @@ import { IconComponent } from '../../shared/components/icon.component';
 @Component({
   selector: 'app-provider-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe, IconComponent],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe, FormatTimePipe, IconComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -154,14 +155,22 @@ import { IconComponent } from '../../shared/components/icon.component';
 })
 export class ProviderDashboardComponent implements OnInit {
   auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
   private apptService = inject(AppointmentService);
 
-  navItems: NavItem[] = [
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
+
+  oldNavItems: NavItem[] = [
     { label: 'Dashboard', iconName: 'home', route: '/provider/dashboard' },
     { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
     { label: 'Slot Management', iconName: 'grid', route: '/provider/slots' },
-    { label: 'Earnings', iconName: 'trending-up', route: '/provider/earnings' },
+    { label: 'Records',       iconName: 'file-text',    route: '/provider/records' },
+    { label: 'Earnings',       iconName: 'trending-up', route: '/provider/earnings' },
     { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
   ];
 

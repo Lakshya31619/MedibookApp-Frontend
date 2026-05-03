@@ -13,11 +13,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401) {
+      const isAuthEndpoint = req.url.includes('/api/auth/login') ||
+                             req.url.includes('/api/auth/register');
+
+      if (err.status === 401 && token && !isAuthEndpoint) {
         localStorage.removeItem('medibook_token');
         localStorage.removeItem('medibook_user');
         router.navigate(['/login']);
       }
+
       return throwError(() => err);
     })
   );

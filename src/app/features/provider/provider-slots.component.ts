@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -166,17 +167,16 @@ import { FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
 })
 export class ProviderSlotsComponent implements OnInit {
   private auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
   private scheduleService = inject(ScheduleService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/provider/dashboard' },
-    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
-    { label: 'Slot Management', iconName: 'grid', route: '/provider/slots' },
-    { label: 'Earnings', iconName: 'trending-up', route: '/provider/earnings' },
-    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   tabs = [
     { key: 'single', label: 'Single Slot' },

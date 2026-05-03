@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PaymentResponse, PlatformRevenue } from '../../core/payment.models';
@@ -161,17 +162,15 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
   `
 })
 export class AdminPaymentsComponent implements OnInit {
+  private navigationService = inject(NavigationService);
   private paymentService = inject(PaymentService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',        iconName: 'home',        route: '/admin/dashboard' },
-    { label: 'Pending Approvals',iconName: 'clock',       route: '/admin/pending' },
-    { label: 'All Providers',    iconName: 'users',       route: '/admin/providers' },
-    { label: 'Reviews',          iconName: 'star',        route: '/admin/reviews' },
-    { label: 'Payments',         iconName: 'dollar-sign', route: '/admin/payments' },
-    { label: 'My Profile',       iconName: 'user',         route: '/admin/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   revenue: PlatformRevenue | null = null;
   revenueLoading = true;

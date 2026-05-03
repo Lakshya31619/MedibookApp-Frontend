@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationService } from '../../core/services/navigation.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { AppointmentSummary } from '../../core/models';
 import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
@@ -75,16 +76,17 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
 })
 export class PatientDashboardComponent implements OnInit {
   private auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private appointmentService = inject(AppointmentService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/patient/dashboard' },
-    { label: 'Find Doctors', iconName: 'search', route: '/patient/browse' },
-    { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
-    { label: 'Profile', iconName: 'user', route: '/patient/profile' },
-  ];
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   upcoming: AppointmentSummary[] = [];
+  all: AppointmentSummary[] = [];
   loading = true;
 
   get greeting(): string {
@@ -96,20 +98,34 @@ export class PatientDashboardComponent implements OnInit {
     return this.auth.currentUser()?.fullName.split(' ')[0] || 'there';
   }
 
+  get completedCount(): number {
+    return this.all.filter(a => a.status === 'COMPLETED').length;
+  }
+
+  get cancelledCount(): number {
+    return this.all.filter(a => a.status === 'CANCELLED').length;
+  }
+
   get stats() {
     return [
       { icon: '📅', value: this.upcoming.length, label: 'Upcoming' },
-      { icon: '✅', value: '–', label: 'Completed' },
-      { icon: '❌', value: '–', label: 'Cancelled' },
-      { icon: '🏥', value: '–', label: 'Total Visits' },
+      { icon: '✅', value: this.completedCount, label: 'Completed' },
+      { icon: '❌', value: this.cancelledCount, label: 'Cancelled' },
+      { icon: '🏥', value: this.all.length, label: 'Total Visits' },
     ];
   }
 
   ngOnInit(): void {
     const userId = this.auth.currentUser()?.userId!;
+
     this.appointmentService.getPatientUpcoming(userId).subscribe({
       next: (a) => { this.upcoming = a; this.loading = false; },
       error: () => { this.loading = false; }
+    });
+
+    this.appointmentService.getPatientAppointments(userId).subscribe({
+      next: (a) => { this.all = a; },
+      error: () => {}
     });
   }
 }

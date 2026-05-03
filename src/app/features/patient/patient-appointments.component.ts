@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { StarRatingComponent } from '../../shared/components/star-rating.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -319,14 +320,14 @@ export class PatientAppointmentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private scheduleService = inject(ScheduleService);
   private reviewService = inject(ReviewService);
+  private navigationService = inject(NavigationService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',       iconName: 'home',     route: '/patient/dashboard' },
-    { label: 'Find Doctors',    iconName: 'search',   route: '/patient/browse' },
-    { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
-    { label: 'Profile',         iconName: 'user',     route: '/patient/profile' },
-  ];
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   tab: 'upcoming' | 'past' = 'upcoming';
   upcoming: AppointmentSummary[] = [];

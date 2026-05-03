@@ -9,38 +9,36 @@ import { AuthSession, LoginRequest, RegisterRequest, User, UserRole } from '../m
 export class AuthService {
   private readonly TOKEN_KEY = 'medibook_token';
   private readonly USER_KEY = 'medibook_user';
-  private base = environment.authServiceUrl;
+  private base = `${environment.apiUrl}/api/auth`;
 
   currentUser = signal<User | null>(this.loadUser());
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  // ── Public API ──────────────────────────────────────────────────────────────
-
   register(body: RegisterRequest): Observable<{ message: string; userId: string; email: string; role: string }> {
     return this.http.post<{ message: string; userId: string; email: string; role: string }>(
-      `${this.base}/auth/register`, body
+      `${this.base}/register`, body
     );
   }
 
   login(body: LoginRequest): Observable<AuthSession> {
-    return this.http.post<AuthSession>(`${this.base}/auth/login`, body).pipe(
+    return this.http.post<AuthSession>(`${this.base}/login`, body).pipe(
       tap(session => this.saveSession(session))
     );
   }
 
   logout(): void {
-    this.http.post(`${this.base}/auth/logout`, {}).subscribe({ error: () => {} });
+    this.http.post(`${this.base}/logout`, {}).subscribe({ error: () => {} });
     this.clearSession();
     this.router.navigate(['/login']);
   }
 
   getProfile(userId: string): Observable<User> {
-    return this.http.get<User>(`${this.base}/auth/profile/${userId}`);
+    return this.http.get<User>(`${this.base}/profile/${userId}`);
   }
 
   updateProfile(userId: string, body: { fullName?: string; phone?: string; profilePicUrl?: string }): Observable<{ message: string; user: User }> {
-    return this.http.put<{ message: string; user: User }>(`${this.base}/auth/profile/${userId}`, body).pipe(
+    return this.http.put<{ message: string; user: User }>(`${this.base}/profile/${userId}`, body).pipe(
       tap(res => {
         const updated = { ...this.currentUser()!, ...res.user };
         this.currentUser.set(updated);
@@ -50,19 +48,29 @@ export class AuthService {
   }
 
   changePassword(body: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
-    return this.http.put<{ message: string }>(`${this.base}/auth/password`, body);
+    return this.http.put<{ message: string }>(`${this.base}/password`, body);
   }
 
   deactivateAccount(userId: string): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.base}/auth/deactivate/${userId}`);
+    return this.http.delete<{ message: string }>(`${this.base}/deactivate/${userId}`);
   }
 
   getAdminUsers(role?: string): Observable<User[]> {
     const params = role ? `?role=${role}` : '';
-    return this.http.get<User[]>(`${this.base}/auth/admin/users${params}`);
+    return this.http.get<User[]>(`${this.base}/admin/users${params}`);
   }
 
-  // ── OAuth2 ──────────────────────────────────────────────────────────────────
+  /**
+   * Safely merge partial updates into the cached currentUser signal + localStorage.
+   * Use this from components instead of writing currentUser.set() directly.
+   */
+  updateCachedUser(partial: Partial<User>): void {
+    const current = this.currentUser();
+    if (!current) return;
+    const updated = { ...current, ...partial };
+    this.currentUser.set(updated);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+  }
 
   handleOAuth2Callback(token: string): void {
     try {
@@ -84,8 +92,6 @@ export class AuthService {
     }
   }
 
-  // ── Session Helpers ─────────────────────────────────────────────────────────
-
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
@@ -106,8 +112,6 @@ export class AuthService {
     };
     this.router.navigate([map[role]]);
   }
-
-  // ── Private ─────────────────────────────────────────────────────────────────
 
   private saveSession(session: AuthSession): void {
     localStorage.setItem(this.TOKEN_KEY, session.token);

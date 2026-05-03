@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ProviderResponse } from '../../core/models';
@@ -109,17 +110,15 @@ import { IconComponent } from '../../shared/components/icon.component';
   `
 })
 export class AdminPendingComponent implements OnInit {
+  private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
-    { label: 'All Providers', iconName: 'users', route: '/admin/providers' },
-    { label: 'Reviews', iconName: 'star', route: '/admin/reviews' },
-    { label: 'Payments', iconName: 'dollar-sign', route: '/admin/payments' },
-    { label: 'My Profile', iconName: 'user', route: '/admin/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   providers: ProviderResponse[] = [];
   loading = true;

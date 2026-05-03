@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -85,17 +86,16 @@ import { ToastService } from '../../core/services/toast.service';
 })
 export class ProviderProfileSetupComponent {
   private auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
   private toast = inject(ToastService);
   private router = inject(Router);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/provider/dashboard' },
-    { label: 'Appointments', iconName: 'calendar', route: '/provider/appointments' },
-    { label: 'Slot Management', iconName: 'grid', route: '/provider/slots' },
-    { label: 'Earnings', iconName: 'trending-up', route: '/provider/earnings' },
-    { label: 'My Profile', iconName: 'user', route: '/provider/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   form = {
     specialization: '', qualification: '', experienceYears: 0,

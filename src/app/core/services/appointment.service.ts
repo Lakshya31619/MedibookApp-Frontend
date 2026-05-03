@@ -6,70 +6,70 @@ import { AppointmentResponse, AppointmentSummary, AppointmentCount, BookAppointm
 
 @Injectable({ providedIn: 'root' })
 export class AppointmentService {
-  private base = environment.appointmentServiceUrl;
+  private base = `${environment.apiUrl}/api/appointments`;
 
   constructor(private http: HttpClient) {}
 
   book(body: BookAppointmentRequest): Observable<AppointmentResponse> {
-    return this.http.post<AppointmentResponse>(`${this.base}/appointments/book`, body);
+    return this.http.post<AppointmentResponse>(`${this.base}/book`, body);
   }
 
   getById(id: string): Observable<AppointmentResponse> {
-    return this.http.get<AppointmentResponse>(`${this.base}/appointments/${id}`);
+    return this.http.get<AppointmentResponse>(`${this.base}/${id}`);
   }
 
   // Patient
   getPatientAppointments(patientId: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/patient/${patientId}`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/patient/${patientId}`);
   }
 
   getPatientUpcoming(patientId: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/patient/${patientId}/upcoming`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/patient/${patientId}/upcoming`);
   }
 
   cancel(id: string, reason?: string): Observable<AppointmentResponse> {
-    return this.http.put<AppointmentResponse>(`${this.base}/appointments/${id}/cancel`, { reason });
+    return this.http.put<AppointmentResponse>(`${this.base}/${id}/cancel`, { reason });
   }
 
   reschedule(id: string, newSlotId: string, reason?: string): Observable<AppointmentResponse> {
-    return this.http.put<AppointmentResponse>(`${this.base}/appointments/${id}/reschedule`, { newSlotId, reason });
+    return this.http.put<AppointmentResponse>(`${this.base}/${id}/reschedule`, { newSlotId, reason });
   }
 
   // Provider/Admin
   getProviderAppointments(providerId: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/provider/${providerId}`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}`);
   }
 
   getProviderToday(providerId: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/provider/${providerId}/today`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/today`);
   }
 
   getProviderUpcoming(providerId: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/provider/${providerId}/upcoming`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/upcoming`);
   }
 
   getProviderByDate(providerId: string, date: string): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/provider/${providerId}/date`, { params: { date } });
+    return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/date`, { params: { date } });
   }
 
   complete(id: string): Observable<AppointmentResponse> {
-    return this.http.put<AppointmentResponse>(`${this.base}/appointments/${id}/complete`, null);
+    return this.http.put<AppointmentResponse>(`${this.base}/${id}/complete`, null);
   }
 
   markNoShow(id: string): Observable<AppointmentResponse> {
-    return this.http.put<AppointmentResponse>(`${this.base}/appointments/${id}/no-show`, null);
+    return this.http.put<AppointmentResponse>(`${this.base}/${id}/no-show`, null);
   }
 
   getProviderCount(providerId: string): Observable<AppointmentCount> {
-    return this.http.get<AppointmentCount>(`${this.base}/appointments/provider/${providerId}/count`);
+    return this.http.get<AppointmentCount>(`${this.base}/provider/${providerId}/count`);
   }
 
   // Admin
   getAll(): Observable<AppointmentSummary[]> {
-    return this.http.get<AppointmentSummary[]>(`${this.base}/appointments/all`);
+    return this.http.get<AppointmentSummary[]>(`${this.base}/all`);
   }
 
   updateStatus(id: string, value: string): Observable<AppointmentResponse> {
-    return this.http.put<AppointmentResponse>(`${this.base}/appointments/${id}/status`, null, { params: { value } });
+    return this.http.put<AppointmentResponse>(`${this.base}/${id}/status`, null, { params: { value } });
   }
 }

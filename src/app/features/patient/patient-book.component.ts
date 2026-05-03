@@ -1,9 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { PaymentService } from '../../core/services/payment.service';
@@ -23,7 +24,7 @@ type BookingStep = 'details' | 'payment' | 'confirmation';
       <div class="max-w-xl mx-auto page-enter">
 
         <!-- Back -->
-        <button (click)="location.back()"
+        <button (click)="router.navigate(['/patient/appointments'])"
                 class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors">
           <app-icon name="arrow-left" [size]="15"></app-icon>
           Back
@@ -265,20 +266,19 @@ type BookingStep = 'details' | 'payment' | 'confirmation';
   `
 })
 export class PatientBookComponent implements OnInit {
-  location = inject(Location);
   router = inject(Router);
   private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private apptService = inject(AppointmentService);
   private paymentService = inject(PaymentService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',       iconName: 'home',     route: '/patient/dashboard' },
-    { label: 'Find Doctors',    iconName: 'search',   route: '/patient/browse' },
-    { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
-    { label: 'Profile',         iconName: 'user',     route: '/patient/profile' },
-  ];
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   steps = [
     { key: 'details',      label: 'Details' },
@@ -351,9 +351,9 @@ export class PatientBookComponent implements OnInit {
 
     // Step A: Book the appointment
     this.apptService.book({
-      patientId,
-      providerId:         this.providerId,
-      slotId:             this.slotId,
+      patientId:          Number(patientId),
+      providerId:         Number(this.providerId),
+      slotId:             Number(this.slotId),
       serviceType:        this.serviceType,
       modeOfConsultation: this.mode,
       notes:              this.notes || undefined,

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { ProviderResponse, SpecializationCount } from '../../core/models';
@@ -10,7 +11,7 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarLayoutComponent, StatusBadgePipe],
+  imports: [CommonModule, RouterModule, SidebarLayoutComponent],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -109,15 +110,14 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
 })
 export class AdminDashboardComponent implements OnInit {
   private providerService = inject(ProviderService);
+  private navigationService = inject(NavigationService);
+  private appointmentService = inject(AppointmentService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/admin/dashboard' },
-    { label: 'Pending Approvals', iconName: 'clock', route: '/admin/pending' },
-    { label: 'All Providers', iconName: 'users', route: '/admin/providers' },
-    { label: 'Reviews', iconName: 'star', route: '/admin/reviews' },
-    { label: 'Payments', iconName: 'dollar-sign', route: '/admin/payments' },
-    { label: 'My Profile', iconName: 'user', route: '/admin/profile' },
-  ];
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   pendingProviders: ProviderResponse[] = [];
   pendingLoading = true;

@@ -145,6 +145,7 @@ export interface AppointmentResponse {
 
 export interface AppointmentSummary {
   appointmentId: string;
+  patientId: string;
   providerId: string;
   serviceType: string;
   appointmentDate: string;
@@ -163,9 +164,9 @@ export interface AppointmentCount {
 }
 
 export interface BookAppointmentRequest {
-  patientId: string;
-  providerId: string;
-  slotId: string;
+  patientId: number | string;
+  providerId: number | string;
+  slotId: number | string;
   serviceType: string;
   modeOfConsultation: ModeOfConsultation;
   notes?: string;

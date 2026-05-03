@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -61,14 +62,14 @@ import { ToastService } from '../../core/services/toast.service';
 })
 export class PatientProfileComponent implements OnInit {
   auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard', iconName: 'home', route: '/patient/dashboard' },
-    { label: 'Find Doctors', iconName: 'search', route: '/patient/browse' },
-    { label: 'My Appointments', iconName: 'calendar', route: '/patient/appointments' },
-    { label: 'Profile', iconName: 'user', route: '/patient/profile' },
-  ];
+  navItems: NavItem[] = [];
+
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   fullName = '';
   phone = '';

@@ -5,6 +5,7 @@ import { IconComponent } from '../../shared/components/icon.component';
 import { StarRatingComponent } from '../../shared/components/star-rating.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { ReviewService } from '../../core/services/review.service';
@@ -162,18 +163,17 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
 })
 export class ProviderAppointmentsComponent implements OnInit {
   private auth = inject(AuthService);
+  private navigationService = inject(NavigationService);
   private providerSvc = inject(ProviderService);
   private apptSvc = inject(AppointmentService);
   private reviewSvc = inject(ReviewService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',       iconName: 'home',        route: '/provider/dashboard' },
-    { label: 'Appointments',    iconName: 'calendar',    route: '/provider/appointments' },
-    { label: 'Slot Management', iconName: 'grid',        route: '/provider/slots' },
-    { label: 'Earnings',        iconName: 'trending-up', route: '/provider/earnings' },
-    { label: 'My Profile',      iconName: 'user',        route: '/provider/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   tab: 'today' | 'all' = 'today';
   today: AppointmentSummary[] = [];

@@ -5,6 +5,7 @@ import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar
 import { IconComponent } from '../../shared/components/icon.component';
 import { StarRatingComponent } from '../../shared/components/star-rating.component';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
+import { NavigationService } from '../../core/services/navigation.service';
 import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ReviewResponse } from '../../core/review.models';
@@ -186,17 +187,15 @@ import { ReviewResponse } from '../../core/review.models';
   `
 })
 export class AdminReviewsComponent implements OnInit {
+  private navigationService = inject(NavigationService);
   private reviewSvc = inject(ReviewService);
   private toast = inject(ToastService);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',        iconName: 'home',        route: '/admin/dashboard' },
-    { label: 'Pending Approvals',iconName: 'clock',       route: '/admin/pending' },
-    { label: 'All Providers',    iconName: 'users',       route: '/admin/providers' },
-    { label: 'Reviews',          iconName: 'star',        route: '/admin/reviews' },
-    { label: 'Payments',         iconName: 'dollar-sign', route: '/admin/payments' },
-    { label: 'My Profile',       iconName: 'user',        route: '/admin/profile' },
-  ];
+  navItems: NavItem[] = [];
+  
+  constructor() {
+    this.navItems = this.navigationService.getNavItems();
+  }
 
   tab: 'flagged' | 'all' = 'flagged';
 

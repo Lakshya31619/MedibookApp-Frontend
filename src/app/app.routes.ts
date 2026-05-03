@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'browse',       loadComponent: () => import('./features/auth/provider-directory.component').then(m => m.ProviderDirectoryComponent) },
       { path: 'appointments', loadComponent: () => import('./features/patient/patient-appointments.component').then(m => m.PatientAppointmentsComponent) },
       { path: 'book',         loadComponent: () => import('./features/patient/patient-book.component').then(m => m.PatientBookComponent) },
+      { path: 'records',      loadComponent: () => import('./features/patient/patient-records.component').then(m => m.PatientRecordsComponent) },   // ← NEW
       { path: 'profile',      loadComponent: () => import('./features/patient/patient-profile.component').then(m => m.PatientProfileComponent) },
       { path: 'notifications',loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -35,6 +36,7 @@ export const routes: Routes = [
       { path: 'dashboard',    loadComponent: () => import('./features/provider/provider-dashboard.component').then(m => m.ProviderDashboardComponent) },
       { path: 'appointments', loadComponent: () => import('./features/provider/provider-appointments.component').then(m => m.ProviderAppointmentsComponent) },
       { path: 'slots',        loadComponent: () => import('./features/provider/provider-slots.component').then(m => m.ProviderSlotsComponent) },
+      { path: 'records',      loadComponent: () => import('./features/provider/provider-records.component').then(m => m.ProviderRecordsComponent) },   // ← NEW
       { path: 'earnings',     loadComponent: () => import('./features/provider/provider-earnings.component').then(m => m.ProviderEarningsComponent) },
       { path: 'profile',      loadComponent: () => import('./features/provider/provider-profile.component').then(m => m.ProviderProfileComponent) },
       { path: 'profile-setup',loadComponent: () => import('./features/provider/provider-profile-setup.component').then(m => m.ProviderProfileSetupComponent) },
@@ -53,8 +55,9 @@ export const routes: Routes = [
       { path: 'providers',     loadComponent: () => import('./features/admin/admin-providers.component').then(m => m.AdminProvidersComponent) },
       { path: 'providers/:id', loadComponent: () => import('./features/admin/admin-provider-detail.component').then(m => m.AdminProviderDetailComponent) },
       { path: 'profile',       loadComponent: () => import('./features/admin/admin-profile.component').then(m => m.AdminProfileComponent) },
-      { path: 'reviews',       loadComponent: () => import('./features/admin/admin-reviews.component').then(m => m.AdminReviewsComponent) },   // ← NEW
+      { path: 'reviews',       loadComponent: () => import('./features/admin/admin-reviews.component').then(m => m.AdminReviewsComponent) },
       { path: 'payments',      loadComponent: () => import('./features/admin/admin-payments.component').then(m => m.AdminPaymentsComponent) },
+      { path: 'records',       loadComponent: () => import('./features/admin/admin-records.component').then(m => m.AdminRecordsComponent) },   // ← NEW
       { path: 'notifications', loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
