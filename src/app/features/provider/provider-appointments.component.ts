@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { AppointmentService } from '../../core/services/appointment.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppointmentSummary } from '../../core/models';
@@ -70,8 +71,20 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
                         </app-icon>
                       </div>
                       <div>
-                        <div class="flex items-center gap-2 mb-0.5">
+                        <div class="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                          @if (paymentStatuses[appt.appointmentId]) {
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full border"
+                                  [ngClass]="paymentStatuses[appt.appointmentId] === 'PAID'
+                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                             : paymentStatuses[appt.appointmentId] === 'PENDING'
+                                             ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                             : paymentStatuses[appt.appointmentId] === 'REFUNDED'
+                                             ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                             : 'bg-slate-100 text-slate-500 border-slate-200'">
+                              {{ paymentStatuses[appt.appointmentId] === 'PENDING' ? '⚠ Unpaid' : paymentStatuses[appt.appointmentId] }}
+                            </span>
+                          }
                         </div>
                         <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
                         <p class="text-xs text-slate-500 mt-0.5">
@@ -166,6 +179,7 @@ export class ProviderAppointmentsComponent implements OnInit {
   private navigationService = inject(NavigationService);
   private providerSvc = inject(ProviderService);
   private apptSvc = inject(AppointmentService);
+  private paymentSvc = inject(PaymentService);
   private reviewSvc = inject(ReviewService);
   private toast = inject(ToastService);
 
@@ -181,6 +195,7 @@ export class ProviderAppointmentsComponent implements OnInit {
   loading = true;
   providerId = '';
 
+  paymentStatuses: Record<string, string> = {};
   existingReviews: Record<string, ReviewResponse> = {};
 
   flagModal = false;
@@ -192,7 +207,7 @@ export class ProviderAppointmentsComponent implements OnInit {
       next: (p) => {
         this.providerId = p.providerId;
         this.apptSvc.getProviderToday(p.providerId).subscribe({
-          next: (a) => { this.today = a; this.loading = false; this.loadReviews(a); },
+          next: (a) => { this.today = a; this.loading = false; this.loadReviews(a); this.loadPaymentStatuses(a); },
           error: () => { this.loading = false; }
         });
       },
@@ -203,7 +218,16 @@ export class ProviderAppointmentsComponent implements OnInit {
   loadAll(): void {
     if (this.all.length || !this.providerId) return;
     this.apptSvc.getProviderAppointments(this.providerId).subscribe({
-      next: (a) => { this.all = a; this.loadReviews(a); }
+      next: (a) => { this.all = a; this.loadReviews(a); this.loadPaymentStatuses(a); }
+    });
+  }
+
+  loadPaymentStatuses(appointments: AppointmentSummary[]): void {
+    appointments.forEach(a => {
+      this.paymentSvc.getStatus(Number(a.appointmentId)).subscribe({
+        next: (res) => { this.paymentStatuses[a.appointmentId] = res.status; },
+        error: () => {}
+      });
     });
   }
 

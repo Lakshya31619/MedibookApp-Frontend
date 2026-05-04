@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
@@ -26,7 +27,7 @@ import { ToastService } from '../../core/services/toast.service';
 
         <div class="card shadow-lg border-0">
           <!-- Google OAuth -->
-          <a href="http://localhost:8080/oauth2/authorization/google"
+          <a [attr.href]="oauthUrl"
              class="flex items-center justify-center gap-3 w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -87,6 +88,7 @@ export class LoginComponent {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
 
+  oauthUrl = `${environment.apiUrl}/oauth2/authorization/google`;
   email = '';
   password = '';
   showPwd = false;

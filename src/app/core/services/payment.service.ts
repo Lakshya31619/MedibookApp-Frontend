@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   PaymentResponse, PaymentSummary, ProcessPaymentRequest,
-  EarningsSummary, Invoice, PlatformRevenue
+  EarningsSummary, Invoice, PlatformRevenue,
+  RazorpayOrderRequest, RazorpayOrderResponse, RazorpayVerifyRequest,
 } from '../payment.models';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +16,7 @@ export class PaymentService {
 
   // ── Patient endpoints ──────────────────────────────────────────────────────
 
+  /** Legacy / CASH flow only — still used when paymentMode === 'CASH' */
   processPayment(body: ProcessPaymentRequest): Observable<PaymentResponse> {
     return this.http.post<PaymentResponse>(`${this.base}/process`, body);
   }
@@ -43,11 +45,31 @@ export class PaymentService {
     return this.http.get<Invoice>(`${this.base}/invoice/${appointmentId}`);
   }
 
+  /** Issues a refund — routes through Razorpay for online payments */
   refund(appointmentId: number, reason?: string): Observable<{ message: string; status: string; refundTransactionId: string; notes: string }> {
     return this.http.post<{ message: string; status: string; refundTransactionId: string; notes: string }>(
-      `${this.base}/refund/${appointmentId}`,
+      `${this.base}/razorpay/refund/${appointmentId}`,
       { reason }
     );
+  }
+
+  // ── Razorpay checkout flow ─────────────────────────────────────────────────
+
+  /**
+   * Step 1: Ask the backend to create a Razorpay order.
+   * Returns the orderId + publishable key needed to open the checkout popup.
+   */
+  createRazorpayOrder(body: RazorpayOrderRequest): Observable<RazorpayOrderResponse> {
+    return this.http.post<RazorpayOrderResponse>(`${this.base}/razorpay/create-order`, body);
+  }
+
+  /**
+   * Step 2: After the user completes payment in the popup, send the
+   * Razorpay callback tokens to the backend for signature verification.
+   * The backend marks the payment PAID only if the signature is valid.
+   */
+  verifyRazorpayPayment(body: RazorpayVerifyRequest): Observable<PaymentResponse> {
+    return this.http.post<PaymentResponse>(`${this.base}/razorpay/verify`, body);
   }
 
   // ── Provider endpoints ─────────────────────────────────────────────────────

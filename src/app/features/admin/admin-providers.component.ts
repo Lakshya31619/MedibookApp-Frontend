@@ -144,7 +144,7 @@ export class AdminProvidersComponent implements OnInit {
 
   applyFilter(): void {
     this.filtered = this.providers.filter(p => {
-      const matchSearch = !this.search || p.specialization.toLowerCase().includes(this.search.toLowerCase()) || (p.clinicName || '').toLowerCase().includes(this.search.toLowerCase());
+      const matchSearch = !this.search || (p.providerName || '').toLowerCase().includes(this.search.toLowerCase()) || p.specialization.toLowerCase().includes(this.search.toLowerCase()) || (p.clinicName || '').toLowerCase().includes(this.search.toLowerCase());
       const matchStatus = !this.statusFilter || p.verificationStatus === this.statusFilter;
       return matchSearch && matchStatus;
     });

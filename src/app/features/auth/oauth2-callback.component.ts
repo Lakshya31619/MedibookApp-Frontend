@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -16,12 +16,15 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class OAuth2CallbackComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private auth = inject(AuthService);
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
     if (token) {
       this.auth.handleOAuth2Callback(token);
+    } else {
+      this.router.navigate(['/login']);
     }
   }
 }

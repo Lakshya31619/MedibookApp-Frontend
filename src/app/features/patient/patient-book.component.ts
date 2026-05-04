@@ -11,7 +11,10 @@ import { PaymentService } from '../../core/services/payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
 import { AppointmentResponse } from '../../core/models';
-import { PaymentMode } from '../../core/payment.models';
+import { PaymentMode, RazorpayHandlerResponse } from '../../core/payment.models';
+
+// Razorpay is loaded globally via checkout.js in index.html
+declare const Razorpay: any;
 
 type BookingStep = 'details' | 'payment' | 'confirmation';
 
@@ -152,17 +155,14 @@ type BookingStep = 'details' | 'payment' | 'confirmation';
               }
             </div>
 
-            <!-- Online transaction ID field -->
+            <!-- Razorpay info for online modes -->
             @if (paymentMode !== 'CASH') {
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                  Transaction / Reference ID
-                </label>
-                <input type="text" [(ngModel)]="transactionId" class="input-field"
-                       placeholder="e.g. pay_ABC123 or UPI ref no.">
-                <p class="text-xs text-slate-400 mt-1.5">
-                  Complete the payment via your {{ paymentMode }} app, then enter the reference ID here.
-                </p>
+              <div class="alert-info text-sm">
+                <app-icon name="shield-check" [size]="16" class="flex-shrink-0"></app-icon>
+                <span>
+                  You'll be redirected to the Razorpay secure checkout to complete payment via
+                  {{ paymentMode === 'UPI' ? 'UPI' : paymentMode === 'CARD' ? 'card' : 'wallet' }}.
+                </span>
               </div>
             }
 
@@ -187,14 +187,14 @@ type BookingStep = 'details' | 'payment' | 'confirmation';
               Back
             </button>
             <button (click)="confirmBooking()"
-                    [disabled]="bookingLoading || (paymentMode !== 'CASH' && !transactionId.trim())"
+                    [disabled]="bookingLoading"
                     class="btn-primary flex-[2] py-3 text-sm">
               @if (bookingLoading) {
                 <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                 Processing…
               } @else {
                 <app-icon name="shield-check" [size]="16"></app-icon>
-                {{ paymentMode === 'CASH' ? 'Confirm & Book' : 'Pay & Confirm' }}
+                {{ paymentMode === 'CASH' ? 'Confirm & Book' : 'Book & Pay via Razorpay' }}
               }
             </button>
           </div>
@@ -287,10 +287,10 @@ export class PatientBookComponent implements OnInit {
   ] as const;
 
   paymentModes = [
-    { value: 'UPI'    as PaymentMode, label: 'UPI',         icon: 'phone' },
-    { value: 'CARD'   as PaymentMode, label: 'Card',        icon: 'dollar-sign' },
-    { value: 'WALLET' as PaymentMode, label: 'Wallet',      icon: 'shield' },
-    { value: 'CASH'   as PaymentMode, label: 'Cash',        icon: 'activity' },
+    { value: 'UPI'    as PaymentMode, label: 'UPI',    icon: 'phone' },
+    { value: 'CARD'   as PaymentMode, label: 'Card',   icon: 'dollar-sign' },
+    { value: 'WALLET' as PaymentMode, label: 'Wallet', icon: 'shield' },
+    { value: 'CASH'   as PaymentMode, label: 'Cash',   icon: 'activity' },
   ];
 
   // Route params
@@ -307,7 +307,6 @@ export class PatientBookComponent implements OnInit {
   mode: 'IN_PERSON' | 'VIDEO' = 'IN_PERSON';
   notes = '';
   paymentMode: PaymentMode = 'UPI';
-  transactionId = '';
   stepError = '';
   bookingLoading = false;
 
@@ -317,15 +316,15 @@ export class PatientBookComponent implements OnInit {
 
   ngOnInit(): void {
     const p = this.route.snapshot.queryParamMap;
-    this.providerId      = p.get('providerId')      || '';
-    this.slotId          = p.get('slotId')           || '';
-    this.date            = p.get('date')             || '';
-    this.startTime       = p.get('startTime')        || '';
-    this.endTime         = p.get('endTime')          || '';
-    this.serviceType     = p.get('serviceType')      || '';
+    this.providerId      = p.get('providerId')  || '';
+    this.slotId          = p.get('slotId')       || '';
+    this.date            = p.get('date')         || '';
+    this.startTime       = p.get('startTime')    || '';
+    this.endTime         = p.get('endTime')      || '';
+    this.serviceType     = p.get('serviceType')  || '';
     this.mode            = (p.get('mode') as 'IN_PERSON' | 'VIDEO') || 'IN_PERSON';
-    this.notes           = p.get('notes')            || '';
-    this.consultationFee = Number(p.get('fee'))      || 0;
+    this.notes           = p.get('notes')        || '';
+    this.consultationFee = Number(p.get('fee'))  || 0;
   }
 
   isStepDone(key: string): boolean {
@@ -340,16 +339,12 @@ export class PatientBookComponent implements OnInit {
   }
 
   confirmBooking(): void {
-    if (this.paymentMode !== 'CASH' && !this.transactionId.trim()) {
-      this.stepError = 'Please enter the transaction / reference ID.';
-      return;
-    }
     this.stepError = '';
     this.bookingLoading = true;
 
     const patientId = this.auth.currentUser()!.userId;
 
-    // Step A: Book the appointment
+    // Step A: Book the appointment first
     this.apptService.book({
       patientId:          Number(patientId),
       providerId:         Number(this.providerId),
@@ -360,35 +355,126 @@ export class PatientBookComponent implements OnInit {
     }).subscribe({
       next: (appt) => {
         this.bookedAppointment = appt;
-        // Step B: Process payment
-        this.paymentService.processPayment({
-          appointmentId: Number(appt.appointmentId),
-          patientId:     Number(patientId),
-          providerId:    Number(this.providerId),
-          amount:        this.consultationFee,
-          mode:          this.paymentMode,
-          transactionId: this.paymentMode !== 'CASH' ? this.transactionId : undefined,
-          notes:         `Payment for appointment on ${this.date}`,
-        }).subscribe({
-          next: (payment) => {
-            this.bookedPayment  = payment;
-            this.bookingLoading = false;
-            this.currentStep    = 'confirmation';
-            this.toast.success('Appointment booked and payment recorded!');
-          },
-          error: (err) => {
-            // Appointment succeeded but payment failed — show warning, still go to confirmation
-            this.bookingLoading = false;
-            this.currentStep    = 'confirmation';
-            this.toast.warning('Appointment booked, but payment recording failed. Please contact support.');
-          }
-        });
+
+        if (this.paymentMode === 'CASH') {
+          // CASH: use the existing /process endpoint — no Razorpay involved
+          this.paymentService.processPayment({
+            appointmentId: Number(appt.appointmentId),
+            patientId:     Number(patientId),
+            providerId:    Number(this.providerId),
+            amount:        this.consultationFee,
+            mode:          'CASH',
+            notes:         `Cash payment for appointment on ${this.date}`,
+          }).subscribe({
+            next: (payment) => {
+              this.bookedPayment  = payment;
+              this.bookingLoading = false;
+              this.currentStep    = 'confirmation';
+              this.toast.success('Appointment booked! Pay cash at the clinic.');
+            },
+            error: () => {
+              this.bookingLoading = false;
+              this.currentStep    = 'confirmation';
+              this.toast.warning('Appointment booked, but payment recording failed. Contact support.');
+            }
+          });
+        } else {
+          // ONLINE (UPI / CARD / WALLET): Razorpay checkout flow
+          this.paymentService.createRazorpayOrder({
+            appointmentId: Number(appt.appointmentId),
+            patientId:     Number(patientId),
+            providerId:    Number(this.providerId),
+            amount:        this.consultationFee,
+            notes:         `Payment for appointment on ${this.date}`,
+          }).subscribe({
+            next: (order) => {
+              this.bookingLoading = false;
+              this.openRazorpayCheckout(order, Number(appt.appointmentId), Number(patientId));
+            },
+            error: (err) => {
+              this.bookingLoading = false;
+              this.stepError = err.error?.error || 'Could not initiate payment. Please try again.';
+            }
+          });
+        }
       },
       error: (err) => {
         this.bookingLoading = false;
         this.stepError = err.error?.error || 'Booking failed. Please try again.';
       }
     });
+  }
+
+  /**
+   * Opens the Razorpay checkout popup.
+   * On success, sends the three Razorpay tokens to the backend for
+   * signature verification before marking the payment as PAID.
+   */
+  private openRazorpayCheckout(
+    order: import('../../core/payment.models').RazorpayOrderResponse,
+    appointmentId: number,
+    patientId: number
+  ): void {
+
+    const options = {
+      key:         order.keyId,
+      amount:      order.amountPaise,
+      currency:    order.currency,
+      name:        'MediBook',
+      description: `Consultation fee — Appointment #${appointmentId}`,
+      order_id:    order.orderId,
+
+      // ── Called by Razorpay after a successful payment ──────────────────
+      handler: (response: RazorpayHandlerResponse) => {
+        this.bookingLoading = true;
+
+        this.paymentService.verifyRazorpayPayment({
+          razorpayOrderId:   response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+          appointmentId,
+          patientId,
+          providerId:  Number(this.providerId),
+          amount:      this.consultationFee,
+          mode:        this.paymentMode,
+          notes:       `Razorpay payment for appointment on ${this.date}`,
+        }).subscribe({
+          next: (payment) => {
+            this.bookedPayment  = payment;
+            this.bookingLoading = false;
+            this.currentStep    = 'confirmation';
+            this.toast.success('Appointment booked and payment successful!');
+          },
+          error: (err) => {
+            this.bookingLoading = false;
+            // Appointment is booked but verification failed — rare edge case.
+            this.stepError = err.error?.error
+              || 'Payment could not be verified. Please contact support with your payment ID: '
+              + response.razorpay_payment_id;
+          }
+        });
+      },
+
+      // ── Called when the user closes the popup without paying ──────────
+      modal: {
+        ondismiss: () => {
+          this.stepError = 'Payment was cancelled. Your appointment has been booked but is unpaid. Please retry payment.';
+        }
+      },
+
+      prefill: {
+        // Prefill is cosmetic — Razorpay still validates on their end
+        contact: '',
+        email:   '',
+      },
+
+      theme: {
+        color: '#1e3a5f', // navy-700 to match the app
+      },
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
   }
 
   downloadInvoice(): void {

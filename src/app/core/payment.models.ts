@@ -36,9 +36,53 @@ export interface ProcessPaymentRequest {
   providerId: number;
   amount: number;
   mode: PaymentMode;
-  transactionId?: string;   // required for CARD / UPI / WALLET
+  transactionId?: string;   // required for CARD / UPI / WALLET (non-Razorpay / CASH flow)
   notes?: string;
 }
+
+// ─── Razorpay types ───────────────────────────────────────────────────────────
+
+/** Sent to POST /payments/razorpay/create-order */
+export interface RazorpayOrderRequest {
+  appointmentId: number;
+  patientId: number;
+  providerId: number;
+  amount: number;       // INR rupees
+  notes?: string;
+}
+
+/** Received from POST /payments/razorpay/create-order */
+export interface RazorpayOrderResponse {
+  orderId: string;      // e.g. order_XXXXXXXXXX
+  currency: string;
+  amountPaise: number;
+  keyId: string;        // publishable key — safe to use in the checkout
+}
+
+/** Sent to POST /payments/razorpay/verify after the checkout popup closes successfully */
+export interface RazorpayVerifyRequest {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  appointmentId: number;
+  patientId: number;
+  providerId: number;
+  amount: number;
+  mode: PaymentMode;
+  notes?: string;
+}
+
+/**
+ * Shape of the handler object passed to window.Razorpay({ handler }).
+ * Razorpay injects this into the global scope via checkout.js.
+ */
+export interface RazorpayHandlerResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+// ─── Existing DTOs (unchanged) ────────────────────────────────────────────────
 
 export interface RefundRequest {
   reason?: string;

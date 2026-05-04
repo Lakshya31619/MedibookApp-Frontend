@@ -5,9 +5,12 @@ import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar
 import { IconComponent } from '../../shared/components/icon.component';
 import { NavigationService } from '../../core/services/navigation.service';
 import { PaymentService } from '../../core/services/payment.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ProviderService } from '../../core/services/provider.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PaymentResponse, PlatformRevenue } from '../../core/payment.models';
 import { FormatDatePipe } from '../../shared/pipes/status.pipe';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-admin-payments',
@@ -33,7 +36,6 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
               <p class="text-xs text-slate-500 uppercase tracking-wide font-medium mt-0.5">Total Platform Revenue</p>
             </div>
 
-            <!-- Monthly breakdown bar chart -->
             <div class="card sm:col-span-2">
               <p class="section-label">Monthly Revenue</p>
               @if (revenue.monthlyBreakdown.length === 0) {
@@ -66,7 +68,7 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
         <!-- Filters row -->
         <div class="flex flex-wrap items-center gap-3 mb-4">
           <input type="text" [(ngModel)]="searchTerm" (input)="applyFilter()"
-                 placeholder="Search by appointment ID or transaction ID…"
+                 placeholder="Search by patient, provider or transaction ID…"
                  class="input-field max-w-xs">
           <select [(ngModel)]="statusFilter" (change)="applyFilter()" class="input-field w-40">
             <option value="">All Statuses</option>
@@ -80,7 +82,7 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
 
         <!-- Table -->
         <div class="card p-0 overflow-hidden">
-          @if (paymentsLoading) {
+          @if (paymentsLoading || namesLoading) {
             <div class="p-6 space-y-3">
               @for (i of [1,2,3,4,5]; track i) {
                 <div class="h-10 bg-slate-100 rounded-lg animate-pulse"></div>
@@ -88,21 +90,21 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
             </div>
           }
 
-          @if (!paymentsLoading && filtered.length === 0) {
+          @if (!paymentsLoading && !namesLoading && filtered.length === 0) {
             <div class="text-center py-14 text-slate-400">
               <app-icon name="dollar-sign" [size]="28" class="mx-auto mb-3 opacity-50"></app-icon>
               <p>No payments found.</p>
             </div>
           }
 
-          @if (!paymentsLoading && filtered.length > 0) {
+          @if (!paymentsLoading && !namesLoading && filtered.length > 0) {
             <div class="table-wrapper">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>Payment ID</th>
-                    <th>Appt. ID</th>
                     <th>Patient</th>
+                    <th>Provider</th>
                     <th>Amount</th>
                     <th>Mode</th>
                     <th>Status</th>
@@ -112,10 +114,21 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
                 </thead>
                 <tbody>
                   @for (p of filtered; track p.paymentId) {
-                    <tr>
+                    <tr [ngClass]="p.status === 'PENDING' ? 'bg-amber-50/40' : ''">
                       <td class="font-mono text-xs text-slate-400">#{{ p.paymentId }}</td>
-                      <td class="font-mono text-xs text-slate-500">#{{ p.appointmentId }}</td>
-                      <td class="text-xs text-slate-500">#{{ p.patientId }}</td>
+                      <td>
+                        <div class="flex flex-col">
+                          <span class="text-sm font-medium text-slate-800">
+                            {{ patientNames[p.patientId] ?? 'Patient #' + p.patientId }}
+                          </span>
+                          <span class="text-xs text-slate-400">Appt #{{ p.appointmentId }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="text-sm text-slate-700">
+                          {{ providerNames[p.providerId] ?? 'Provider #' + p.providerId }}
+                        </span>
+                      </td>
                       <td class="font-semibold text-slate-800">₹{{ p.amount }}</td>
                       <td>
                         <span class="text-xs font-medium text-slate-600 flex items-center gap-1">
@@ -164,10 +177,12 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
 export class AdminPaymentsComponent implements OnInit {
   private navigationService = inject(NavigationService);
   private paymentService = inject(PaymentService);
+  private authService = inject(AuthService);
+  private providerService = inject(ProviderService);
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [];
-  
+
   constructor() {
     this.navItems = this.navigationService.getNavItems();
   }
@@ -177,6 +192,11 @@ export class AdminPaymentsComponent implements OnInit {
   payments: PaymentResponse[] = [];
   filtered: PaymentResponse[] = [];
   paymentsLoading = true;
+  namesLoading = true;
+
+  patientNames: Record<number, string | undefined> = {};
+  providerNames: Record<number, string | undefined> = {};
+
   searchTerm = '';
   statusFilter = '';
 
@@ -191,8 +211,31 @@ export class AdminPaymentsComponent implements OnInit {
     });
 
     this.paymentService.getAll().subscribe({
-      next: (p) => { this.payments = p; this.filtered = p; this.paymentsLoading = false; },
-      error: () => { this.paymentsLoading = false; }
+      next: (p) => {
+        this.payments = p;
+        this.filtered = p;
+        this.paymentsLoading = false;
+        this.loadNames();
+      },
+      error: () => { this.paymentsLoading = false; this.namesLoading = false; }
+    });
+  }
+
+  private loadNames(): void {
+    forkJoin({
+      patients: this.authService.getAdminUsers('PATIENT'),
+      providers: this.providerService.getAll(),
+    }).subscribe({
+      next: ({ patients, providers }) => {
+        patients.forEach(u => {
+          this.patientNames[Number(u.userId)] = u.fullName;
+        });
+        providers.forEach(p => {
+          this.providerNames[Number(p.providerId)] = p.providerName ?? `Provider #${p.providerId}`;
+        });
+        this.namesLoading = false;
+      },
+      error: () => { this.namesLoading = false; }
     });
   }
 
@@ -200,9 +243,13 @@ export class AdminPaymentsComponent implements OnInit {
     const term = this.searchTerm.toLowerCase();
     this.filtered = this.payments.filter(p => {
       const matchesStatus = !this.statusFilter || p.status === this.statusFilter;
+      const patientName = (this.patientNames[p.patientId] ?? '').toLowerCase();
+      const providerName = (this.providerNames[p.providerId] ?? '').toLowerCase();
       const matchesSearch = !term
-        || String(p.appointmentId).includes(term)
-        || (p.transactionId || '').toLowerCase().includes(term);
+        || patientName.includes(term)
+        || providerName.includes(term)
+        || (p.transactionId ?? '').toLowerCase().includes(term)
+        || String(p.appointmentId).includes(term);
       return matchesStatus && matchesSearch;
     });
   }
