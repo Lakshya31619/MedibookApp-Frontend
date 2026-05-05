@@ -55,7 +55,7 @@ import { RecordResponse } from '../../core/record.models';
 
                   <div class="flex items-start gap-3 flex-1">
                     <div class="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <app-icon name="file-text" [size]="18" class="text-teal-600"></app-icon>
+                      <app-icon name="clipboard" [size]="18" class="text-teal-600"></app-icon>
                     </div>
                     <div class="flex-1 min-w-0">
                       <p class="font-semibold text-slate-900 text-sm truncate">{{ record.diagnosis }}</p>
@@ -80,7 +80,6 @@ import { RecordResponse } from '../../core/record.models';
                     }
                     @if (record.attachmentUrl) {
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        <app-icon name="paperclip" [size]="11"></app-icon>
                         Attachment
                       </span>
                     }
@@ -100,13 +99,23 @@ import { RecordResponse } from '../../core/record.models';
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto"
                  (click)="$event.stopPropagation()">
 
+              <!-- Modal header -->
               <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold text-slate-900">Medical Record</h2>
-                <button (click)="closeDetail()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
-                  <app-icon name="x" [size]="18"></app-icon>
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="downloadPdf(selectedRecord); $event.stopPropagation()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors">
+                    <app-icon name="download" [size]="13"></app-icon>
+                    Download PDF
+                  </button>
+                  <button (click)="closeDetail()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <app-icon name="x" [size]="18"></app-icon>
+                  </button>
+                </div>
               </div>
 
+              <!-- Modal body -->
               <div class="px-6 py-5 space-y-5">
 
                 <div class="grid grid-cols-2 gap-3 text-sm">
@@ -159,7 +168,6 @@ import { RecordResponse } from '../../core/record.models';
                     <p class="text-xs text-slate-400 font-medium uppercase tracking-wide mb-1">Attachment</p>
                     <a [href]="selectedRecord.attachmentUrl" target="_blank"
                        class="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                      <app-icon name="paperclip" [size]="14"></app-icon>
                       View Document
                     </a>
                   </div>
@@ -206,4 +214,115 @@ export class PatientRecordsComponent implements OnInit {
 
   openDetail(record: RecordResponse): void { this.selectedRecord = record; }
   closeDetail(): void { this.selectedRecord = null; }
+
+  downloadPdf(record: RecordResponse): void {
+    const patientName = this.auth.currentUser()?.fullName ?? 'Patient';
+    const fmt = (d: string | null) =>
+      d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+
+    const html = `
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Medical Record #${record.recordId}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Georgia, serif; color: #1e293b; background: #fff; padding: 48px 56px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #0f3460; margin-bottom: 28px; }
+          .brand { font-size: 22px; font-weight: bold; color: #0f3460; letter-spacing: -0.5px; }
+          .brand span { color: #10b981; }
+          .meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.6; }
+          .title { font-size: 18px; font-weight: bold; color: #0f3460; margin-bottom: 20px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; margin-bottom: 24px; }
+          .field-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-family: Arial, sans-serif; margin-bottom: 3px; }
+          .field-value { font-size: 13px; color: #1e293b; }
+          .section { margin-bottom: 20px; }
+          .section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-family: Arial, sans-serif; margin-bottom: 6px; }
+          .section-box { background: #f8fafc; border-left: 3px solid #0f3460; padding: 12px 14px; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.65; color: #334155; }
+          .section-box.rx { border-color: #10b981; background: #f0fdf4; }
+          .section-box.notes { border-color: #6366f1; background: #f5f3ff; }
+          .followup { display: flex; align-items: center; gap: 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 12px; color: #92400e; }
+          .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; font-family: Arial, sans-serif; }
+          .confidential { font-size: 9px; text-align: center; color: #cbd5e1; margin-top: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+          @media print {
+            body { padding: 32px 40px; }
+            @page { margin: 0; size: A4; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">Medi<span>Book</span></div>
+          <div class="meta">
+            <div><strong>Medical Record #${record.recordId}</strong></div>
+            <div>Patient: ${patientName}</div>
+            <div>Appointment: #${record.appointmentId}</div>
+            <div>Generated: ${fmt(new Date().toISOString())}</div>
+          </div>
+        </div>
+
+        <div class="title">Consultation Summary</div>
+
+        <div class="grid">
+          <div>
+            <div class="field-label">Consultation Date</div>
+            <div class="field-value">${fmt(record.createdAt)}</div>
+          </div>
+          <div>
+            <div class="field-label">Last Updated</div>
+            <div class="field-value">${fmt(record.updatedAt)}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Diagnosis</div>
+          <div class="section-box">${record.diagnosis}</div>
+        </div>
+
+        ${record.prescription ? `
+        <div class="section">
+          <div class="section-label">Prescription</div>
+          <div class="section-box rx">${record.prescription}</div>
+        </div>` : ''}
+
+        ${record.notes ? `
+        <div class="section">
+          <div class="section-label">Doctor's Notes</div>
+          <div class="section-box notes">${record.notes}</div>
+        </div>` : ''}
+
+        ${record.followUpDate ? `
+        <div class="followup">
+          &#128197; <strong>Follow-up scheduled:</strong> ${fmt(record.followUpDate)}
+          ${record.followUpReminderSent ? '&nbsp;· Reminder sent ✓' : ''}
+        </div>` : ''}
+
+        ${record.attachmentUrl ? `
+        <div class="section">
+          <div class="section-label">Attachment</div>
+          <div class="field-value" style="font-size:12px; color:#3b82f6;">${record.attachmentUrl}</div>
+        </div>` : ''}
+
+        <div class="footer">
+          <span>MediBook Health Platform</span>
+          <span>Record ID: ${record.recordId} · Patient ID: ${record.patientId}</span>
+        </div>
+        <div class="confidential">Confidential medical document — for authorised use only</div>
+      </body>
+      </html>`;
+
+    const win = window.open('', '_blank', 'width=794,height=1123');
+    if (!win) {
+      this.toast.error('Pop-up blocked — please allow pop-ups and try again.');
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    // Small delay lets the browser finish painting before print dialog opens
+    setTimeout(() => {
+      win.print();
+      win.close();
+    }, 400);
+  }
 }

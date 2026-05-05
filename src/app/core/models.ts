@@ -153,6 +153,7 @@ export interface AppointmentSummary {
   endTime: string;
   status: AppointmentStatus;
   modeOfConsultation: ModeOfConsultation;
+  notes?: string;
 }
 
 export interface AppointmentCount {
@@ -161,6 +162,7 @@ export interface AppointmentCount {
   completed: number;
   scheduled: number;
   cancelled: number;
+  noShow: number;
 }
 
 export interface BookAppointmentRequest {

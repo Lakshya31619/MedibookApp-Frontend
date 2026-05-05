@@ -10,6 +10,13 @@ import { ToastService } from '../../core/services/toast.service';
 import { EarningsSummary, PaymentSummary } from '../../core/payment.models';
 import { FormatDatePipe } from '../../shared/pipes/status.pipe';
 
+interface MonthBucket {
+  key: string;       // "2025-04"
+  label: string;     // "Apr"
+  year: number;
+  total: number;
+}
+
 @Component({
   selector: 'app-provider-earnings',
   standalone: true,
@@ -64,6 +71,53 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
             }
           </div>
         }
+
+        <!-- Monthly earnings chart -->
+        <div class="card mb-6">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h2 class="font-serif text-xl text-navy-800">Monthly Earnings</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Paid payments only · last 6 months</p>
+            </div>
+            @if (!paymentsLoading && monthlyBuckets.length > 0) {
+              <div class="text-right">
+                <p class="text-xs text-slate-400 uppercase tracking-wide">Best month</p>
+                <p class="text-sm font-semibold text-navy-700">{{ bestMonth?.label }} {{ bestMonth?.year }} · ₹{{ bestMonth?.total | number:'1.0-0' }}</p>
+              </div>
+            }
+          </div>
+
+          @if (paymentsLoading) {
+            <div class="flex items-end gap-2" style="height:160px">
+              @for (i of [1,2,3,4,5,6]; track i) {
+                <div class="flex-1 bg-gray-100 rounded-t animate-pulse" [style.height.px]="40 + i * 16"></div>
+              }
+            </div>
+          } @else if (monthlyBuckets.length === 0) {
+            <div class="flex flex-col items-center justify-center text-slate-400 gap-2" style="height:160px">
+              <app-icon name="trending-up" [size]="28" class="text-slate-300"></app-icon>
+              <p class="text-sm">No paid payments yet.</p>
+            </div>
+          } @else {
+            <div class="flex items-end gap-2" style="height:160px">
+              @for (b of monthlyBuckets; track b.key) {
+                <div class="flex-1 flex flex-col items-center gap-1 group" style="height:100%">
+                  <div class="flex-1"></div>
+                  <div
+                    class="w-full rounded-t relative overflow-visible cursor-default transition-all duration-700"
+                    [style.height.px]="maxBucketTotal ? Math.max(4, (b.total / maxBucketTotal) * 148) : 4">
+                    <!-- Tooltip -->
+                    <div class="absolute -top-9 left-1/2 -translate-x-1/2 bg-navy-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      ₹{{ b.total | number:'1.0-0' }}
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t opacity-90 group-hover:from-emerald-700 group-hover:to-emerald-500 transition-all duration-200"></div>
+                  </div>
+                  <span class="text-[10px] text-slate-400 truncate w-full text-center leading-none pb-0.5">{{ b.label }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
 
         <!-- Payment history table -->
         <div class="card">
@@ -135,6 +189,8 @@ import { FormatDatePipe } from '../../shared/pipes/status.pipe';
   `
 })
 export class ProviderEarningsComponent implements OnInit {
+  readonly Math = Math;
+
   private auth = inject(AuthService);
   private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
@@ -142,7 +198,7 @@ export class ProviderEarningsComponent implements OnInit {
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [];
-  
+
   constructor() {
     this.navItems = this.navigationService.getNavItems();
   }
@@ -151,6 +207,16 @@ export class ProviderEarningsComponent implements OnInit {
   summaryLoading = true;
   payments: PaymentSummary[] = [];
   paymentsLoading = true;
+  monthlyBuckets: MonthBucket[] = [];
+
+  get maxBucketTotal(): number {
+    return Math.max(...this.monthlyBuckets.map(b => b.total), 1);
+  }
+
+  get bestMonth(): MonthBucket | null {
+    if (!this.monthlyBuckets.length) return null;
+    return this.monthlyBuckets.reduce((a, b) => b.total > a.total ? b : a);
+  }
 
   ngOnInit(): void {
     const userId = this.auth.currentUser()!.userId;
@@ -164,12 +230,44 @@ export class ProviderEarningsComponent implements OnInit {
         });
 
         this.paymentService.getByProvider(pid).subscribe({
-          next: (p) => { this.payments = p; this.paymentsLoading = false; },
+          next: (p) => {
+            this.payments = p;
+            this.monthlyBuckets = this.buildMonthlyBuckets(p);
+            this.paymentsLoading = false;
+          },
           error: () => { this.paymentsLoading = false; }
         });
       },
       error: () => { this.summaryLoading = false; this.paymentsLoading = false; }
     });
+  }
+
+  private buildMonthlyBuckets(payments: PaymentSummary[]): MonthBucket[] {
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Bucket paid payments by year-month
+    const map = new Map<string, number>();
+    for (const p of payments) {
+      if (p.status !== 'PAID' || !p.paidAt) continue;
+      const d = new Date(p.paidAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) ?? 0) + p.amount);
+    }
+
+    // Build last 6 calendar months (including current), filling gaps with 0
+    const now = new Date();
+    const buckets: MonthBucket[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      buckets.push({
+        key,
+        label: MONTH_NAMES[d.getMonth()],
+        year: d.getFullYear(),
+        total: map.get(key) ?? 0,
+      });
+    }
+    return buckets;
   }
 
   modeIcon(mode: string): string {

@@ -94,7 +94,7 @@ import { IconComponent } from '../../shared/components/icon.component';
         }
 
         <!-- Stats -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <div class="card">
             <div class="mb-2"><app-icon name="calendar" sizeClass="w-6 h-6 text-navy-700"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.scheduled || 0 }}</p>
@@ -111,7 +111,12 @@ import { IconComponent } from '../../shared/components/icon.component';
             <p class="text-gray-500 text-xs mt-0.5">Cancelled</p>
           </div>
           <div class="card">
-            <div class="mb-2"><app-icon name="info" sizeClass="w-6 h-6 text-blue-600"></app-icon></div>
+            <div class="mb-2"><app-icon name="user-x" sizeClass="w-6 h-6 text-amber-500"></app-icon></div>
+            <p class="text-2xl font-bold text-navy-700">{{ counts?.noShow || 0 }}</p>
+            <p class="text-gray-500 text-xs mt-0.5">No-Show</p>
+          </div>
+          <div class="card col-span-2 sm:col-span-1">
+            <div class="mb-2"><app-icon name="bar-chart-2" sizeClass="w-6 h-6 text-blue-600"></app-icon></div>
             <p class="text-2xl font-bold text-navy-700">{{ counts?.total || 0 }}</p>
             <p class="text-gray-500 text-xs mt-0.5">Total</p>
           </div>

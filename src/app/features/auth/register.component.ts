@@ -127,10 +127,10 @@ export class RegisterComponent implements OnInit {
     this.fieldErrors = {};
     this.loading = true;
     this.auth.register({ fullName: this.fullName, email: this.email, password: this.password, phone: this.phone || undefined, role: this.role }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
-        this.toast.success('Account created! Please sign in.');
-        this.router.navigate(['/login']);
+        this.toast.success('Account created! Please verify your email.');
+        this.router.navigate(['/verify-email'], { queryParams: { email: res.email } });
       },
       error: (err) => {
         this.loading = false;

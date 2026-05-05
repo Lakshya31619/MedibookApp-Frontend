@@ -10,6 +10,7 @@ export const routes: Routes = [
   // Auth
   { path: 'login',           canActivate: [guestGuard], loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: 'register',        canActivate: [guestGuard], loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
+  { path: 'verify-email',    loadComponent: () => import('./features/auth/verify-email.component').then(m => m.VerifyEmailComponent) },
   { path: 'oauth2/callback', loadComponent: () => import('./features/auth/oauth2-callback.component').then(m => m.OAuth2CallbackComponent) },
 
   // Patient
@@ -54,6 +55,7 @@ export const routes: Routes = [
       { path: 'pending',       loadComponent: () => import('./features/admin/admin-pending.component').then(m => m.AdminPendingComponent) },
       { path: 'providers',     loadComponent: () => import('./features/admin/admin-providers.component').then(m => m.AdminProvidersComponent) },
       { path: 'providers/:id', loadComponent: () => import('./features/admin/admin-provider-detail.component').then(m => m.AdminProviderDetailComponent) },
+      { path: 'patients',      loadComponent: () => import('./features/admin/admin-patients.component').then(m => m.AdminPatientsComponent) },
       { path: 'profile',       loadComponent: () => import('./features/admin/admin-profile.component').then(m => m.AdminProfileComponent) },
       { path: 'reviews',       loadComponent: () => import('./features/admin/admin-reviews.component').then(m => m.AdminReviewsComponent) },
       { path: 'payments',      loadComponent: () => import('./features/admin/admin-payments.component').then(m => m.AdminPaymentsComponent) },

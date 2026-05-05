@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
@@ -92,6 +92,7 @@ export class LoginComponent {
   email = '';
   password = '';
   showPwd = false;
+  private router = inject(Router);
   loading = false;
   error = '';
 
@@ -106,7 +107,12 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error || err.error?.message || 'Invalid credentials. Please try again.';
+        if (err.error?.error === 'EMAIL_NOT_VERIFIED') {
+          this.toast.warning('Please verify your email before logging in.');
+          this.router.navigate(['/verify-email'], { queryParams: { email: err.error.email } });
+        } else {
+          this.error = err.error?.error || err.error?.message || 'Invalid credentials. Please try again.';
+        }
       }
     });
   }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal.component';
 import { NavigationService } from '../../core/services/navigation.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -15,7 +16,7 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-admin-payments',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarLayoutComponent, IconComponent, FormatDatePipe],
+  imports: [CommonModule, FormsModule, SidebarLayoutComponent, IconComponent, ConfirmModalComponent, FormatDatePipe],
   template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
@@ -155,8 +156,8 @@ import { forkJoin } from 'rxjs';
                             </button>
                           }
                           @if (p.status === 'PAID') {
-                            <button (click)="forceStatus(p, 'REFUNDED')"
-                                    class="text-xs text-blue-600 hover:underline font-medium">
+                            <button (click)="openRefund(p)"
+                                    class="text-xs text-blue-600 border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-50 transition-colors font-medium">
                               Refund
                             </button>
                           }
@@ -172,6 +173,20 @@ import { forkJoin } from 'rxjs';
 
       </div>
     </app-sidebar-layout>
+
+    <app-confirm-modal
+      [open]="refundModal"
+      title="Issue Refund"
+      message="This will trigger a refund via Razorpay for the full payment amount. This cannot be undone."
+      confirmText="Issue Refund"
+      cancelText="Cancel"
+      [danger]="true"
+      [requireReason]="true"
+      reasonLabel="Reason for refund"
+      reasonPlaceholder="e.g. Appointment cancelled by provider, duplicate charge…"
+      (confirmed)="confirmRefund($event)"
+      (cancelled)="refundModal = false">
+    </app-confirm-modal>
   `
 })
 export class AdminPaymentsComponent implements OnInit {
@@ -199,6 +214,9 @@ export class AdminPaymentsComponent implements OnInit {
 
   searchTerm = '';
   statusFilter = '';
+
+  refundModal = false;
+  refundTarget: PaymentResponse | null = null;
 
   get maxRevenue(): number {
     return Math.max(...(this.revenue?.monthlyBreakdown.map(m => m.revenue) ?? [1]), 1);
@@ -254,8 +272,44 @@ export class AdminPaymentsComponent implements OnInit {
     });
   }
 
-  forceStatus(p: PaymentResponse, value: string): void {
-    this.paymentService.updateStatus(p.paymentId, value).subscribe({
+  openRefund(p: PaymentResponse): void {
+    this.refundTarget = p;
+    this.refundModal = true;
+  }
+
+  confirmRefund(reason: string): void {
+    this.refundModal = false;
+    const p = this.refundTarget!;
+    this.paymentService.refund(p.appointmentId, reason).subscribe({
+      next: () => {
+        const idx = this.payments.findIndex(x => x.paymentId === p.paymentId);
+        if (idx !== -1) this.payments[idx] = { ...this.payments[idx], status: 'REFUNDED' as any };
+        this.applyFilter();
+        this.toast.success(`Refund issued for payment #${p.paymentId}.`);
+        this.refundTarget = null;
+      },
+      error: (err) => {
+        const msg: string = err?.error?.error || err?.message || '';
+        if (msg.toLowerCase().includes('razorpay') || msg.toLowerCase().includes('cash')) {
+          // Razorpay call failed or CASH payment — fall back to admin status override
+          this.paymentService.updateStatus(p.paymentId, 'REFUNDED').subscribe({
+            next: () => {
+              const idx = this.payments.findIndex(x => x.paymentId === p.paymentId);
+              if (idx !== -1) this.payments[idx] = { ...this.payments[idx], status: 'REFUNDED' as any };
+              this.applyFilter();
+              this.toast.success(`Payment #${p.paymentId} marked as refunded (manual override).`);
+              this.refundTarget = null;
+            },
+            error: () => this.toast.error('Refund failed. Could not override status.')
+          });
+        } else {
+          this.toast.error(msg || 'Refund failed. Please try again.');
+        }
+      }
+    });
+  }
+
+  forceStatus(p: PaymentResponse, value: string): void {    this.paymentService.updateStatus(p.paymentId, value).subscribe({
       next: () => {
         p.status = value as any;
         this.applyFilter();

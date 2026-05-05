@@ -54,7 +54,7 @@ declare const Razorpay: any;
           </button>
           <button (click)="tab = 'past'; loadPast()" class="px-5 py-2 rounded-lg text-sm font-medium transition-all"
             [ngClass]="tab === 'past' ? 'bg-white text-navy-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-            Past
+            Past ({{ past.length }})
           </button>
         </div>
 
@@ -154,13 +154,31 @@ declare const Razorpay: any;
 
         <!-- Past -->
         @if (!loading && tab === 'past') {
-          @if (past.length === 0) {
+          <!-- Status filter pills -->
+          @if (past.length > 0) {
+            <div class="flex flex-wrap gap-2 mb-5">
+              @for (f of statusFilters; track f.value) {
+                <button
+                  (click)="pastFilter = f.value"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                  [ngClass]="pastFilter === f.value
+                    ? f.activeClass
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'">
+                  <span class="w-1.5 h-1.5 rounded-full" [ngClass]="pastFilter === f.value ? f.dotActive : f.dot"></span>
+                  {{ f.label }}
+                  <span class="opacity-70">({{ countByStatus(f.value) }})</span>
+                </button>
+              }
+            </div>
+          }
+
+          @if (filteredPast.length === 0) {
             <div class="card text-center py-14">
-              <p class="text-slate-400">No past appointments found.</p>
+              <p class="text-slate-400">{{ past.length === 0 ? 'No past appointments found.' : 'No ' + pastFilter.toLowerCase() + ' appointments.' }}</p>
             </div>
           }
           <div class="space-y-3">
-            @for (appt of past; track appt.appointmentId) {
+            @for (appt of filteredPast; track appt.appointmentId) {
               <div class="card">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div class="flex items-start gap-3">
@@ -411,6 +429,48 @@ export class PatientAppointmentsComponent implements OnInit {
   upcoming: AppointmentSummary[] = [];
   past: AppointmentSummary[] = [];
   loading = true;
+  pastFilter: string = 'ALL';
+
+  readonly statusFilters = [
+    {
+      value: 'ALL',
+      label: 'All',
+      dot: 'bg-slate-300',
+      dotActive: 'bg-white',
+      activeClass: 'bg-slate-700 text-white border-slate-700',
+    },
+    {
+      value: 'COMPLETED',
+      label: 'Completed',
+      dot: 'bg-emerald-400',
+      dotActive: 'bg-white',
+      activeClass: 'bg-emerald-600 text-white border-emerald-600',
+    },
+    {
+      value: 'CANCELLED',
+      label: 'Cancelled',
+      dot: 'bg-red-400',
+      dotActive: 'bg-white',
+      activeClass: 'bg-red-500 text-white border-red-500',
+    },
+    {
+      value: 'NO_SHOW',
+      label: 'No-Show',
+      dot: 'bg-amber-400',
+      dotActive: 'bg-white',
+      activeClass: 'bg-amber-500 text-white border-amber-500',
+    },
+  ];
+
+  get filteredPast(): AppointmentSummary[] {
+    if (this.pastFilter === 'ALL') return this.past;
+    return this.past.filter(a => a.status === this.pastFilter);
+  }
+
+  countByStatus(status: string): number {
+    if (status === 'ALL') return this.past.length;
+    return this.past.filter(a => a.status === status).length;
+  }
   paymentStatuses: Record<string, string> = {};
   existingReviews: Record<string, ReviewResponse> = {};
 

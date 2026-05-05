@@ -21,6 +21,14 @@ export class AuthService {
     );
   }
 
+  sendVerificationCode(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/send-verification`, { email });
+  }
+
+  verifyEmail(email: string, code: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/verify-email`, { email, code });
+  }
+
   login(body: LoginRequest): Observable<AuthSession> {
     return this.http.post<AuthSession>(`${this.base}/login`, body).pipe(
       tap(session => this.saveSession(session))

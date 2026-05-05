@@ -2,10 +2,13 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { IconComponent } from '../../shared/components/icon.component';
 import { NavigationService } from '../../core/services/navigation.service';
 import { RecordService } from '../../core/services/record.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ProviderService } from '../../core/services/provider.service';
 import { ToastService } from '../../core/services/toast.service';
 import { RecordResponse } from '../../core/record.models';
 
@@ -67,7 +70,7 @@ type AdminTab = 'all' | 'followup';
         <div class="relative mb-4">
           <app-icon name="search" [size]="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></app-icon>
           <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()"
-                 class="input pl-9 w-full sm:w-72" placeholder="Search by diagnosis or patient ID...">
+                 class="input pl-9 w-full sm:w-72" placeholder="Search by diagnosis or patient name...">
         </div>
 
         <!-- Loading -->
@@ -100,10 +103,12 @@ type AdminTab = 'all' | 'followup';
                     <tr class="hover:bg-slate-50 transition-colors">
                       <td class="px-5 py-3 text-slate-500 font-mono text-xs">#{{ record.recordId }}</td>
                       <td class="px-5 py-3 font-medium text-slate-800">
-                        #{{ record.patientId }}
+                        {{ patientNames[record.patientId] ?? 'Patient #' + record.patientId }}
                         <span class="text-xs text-slate-400 ml-1">(Appt #{{ record.appointmentId }})</span>
                       </td>
-                      <td class="px-5 py-3 text-slate-600">#{{ record.providerId }}</td>
+                      <td class="px-5 py-3 text-slate-600">
+                        {{ providerNames[record.providerId] ?? 'Provider #' + record.providerId }}
+                      </td>
                       <td class="px-5 py-3 max-w-[180px]">
                         <p class="truncate text-slate-700">{{ record.diagnosis }}</p>
                       </td>
@@ -166,8 +171,14 @@ type AdminTab = 'all' | 'followup';
               </div>
               <div class="px-6 py-5 space-y-4 text-sm">
                 <div class="grid grid-cols-2 gap-3">
-                  <div><p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Patient</p><p>#{{ viewRecord.patientId }}</p></div>
-                  <div><p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Provider</p><p>#{{ viewRecord.providerId }}</p></div>
+                  <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Patient</p>
+                    <p class="font-medium text-slate-800">{{ patientNames[viewRecord.patientId] ?? 'Patient #' + viewRecord.patientId }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Provider</p>
+                    <p class="font-medium text-slate-800">{{ providerNames[viewRecord.providerId] ?? 'Provider #' + viewRecord.providerId }}</p>
+                  </div>
                   <div><p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Appointment</p><p>#{{ viewRecord.appointmentId }}</p></div>
                   <div><p class="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Editable</p>
                     <span [class]="viewRecord.editable ? 'text-green-600 text-xs' : 'text-slate-400 text-xs'">
@@ -247,10 +258,12 @@ type AdminTab = 'all' | 'followup';
 export class AdminRecordsComponent implements OnInit {
   private navigationService = inject(NavigationService);
   private recordService = inject(RecordService);
+  private authService = inject(AuthService);
+  private providerService = inject(ProviderService);
   private toast = inject(ToastService);
 
   navItems: NavItem[] = [];
-  
+
   constructor() {
     this.navItems = this.navigationService.getNavItems();
   }
@@ -268,12 +281,35 @@ export class AdminRecordsComponent implements OnInit {
   viewRecord: RecordResponse | null = null;
   deleteTarget: RecordResponse | null = null;
 
+  // Plain objects with numeric keys — identical pattern to admin-payments which works correctly
+  patientNames: Record<number, string | undefined> = {};
+  providerNames: Record<number, string | undefined> = {};
+
   get attachedCount(): number { return this.allRecords.filter(r => r.attachmentUrl).length; }
   get editableCount(): number { return this.allRecords.filter(r => r.editable).length; }
 
   ngOnInit(): void {
     this.loadAll();
     this.loadFollowUp();
+    this.loadNames();
+  }
+
+  private loadNames(): void {
+    forkJoin({
+      patients: this.authService.getAdminUsers('PATIENT'),
+      providers: this.providerService.getAll()
+    }).subscribe({
+      next: ({ patients, providers }) => {
+        patients.forEach(u => {
+          this.patientNames[Number(u.userId)] = u.fullName;
+        });
+        providers.forEach(p => {
+          this.providerNames[Number(p.providerId)] = p.providerName ?? `Provider #${p.providerId}`;
+        });
+        this.applyFilter();
+      },
+      error: () => {}
+    });
   }
 
   loadAll(): void {
@@ -304,7 +340,8 @@ export class AdminRecordsComponent implements OnInit {
     this.filtered = q
       ? source.filter(r =>
           r.diagnosis.toLowerCase().includes(q) ||
-          String(r.patientId).includes(q) ||
+          (this.patientNames[r.patientId] ?? '').toLowerCase().includes(q) ||
+          (this.providerNames[r.providerId] ?? '').toLowerCase().includes(q) ||
           String(r.recordId).includes(q)
         )
       : source;

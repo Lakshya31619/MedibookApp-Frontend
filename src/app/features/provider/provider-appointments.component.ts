@@ -19,8 +19,7 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
   selector: 'app-provider-appointments',
   standalone: true,
   imports: [CommonModule, SidebarLayoutComponent, IconComponent, StarRatingComponent,
-            ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],
-  template: `
+            ConfirmModalComponent, StatusBadgePipe, FormatTimePipe, FormatDatePipe],  template: `
     <app-sidebar-layout [navItems]="navItems">
       <div class="page-enter">
 
@@ -98,7 +97,7 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
                         <button (click)="markComplete(appt)" class="btn-primary text-xs py-1.5 px-3">
                           <app-icon name="check" [size]="13"></app-icon> Complete
                         </button>
-                        <button (click)="markNoShow(appt)" class="btn-secondary text-xs py-1.5 px-3">
+                        <button (click)="openNoShow(appt)" class="btn-secondary text-xs py-1.5 px-3">
                           No-Show
                         </button>
                       </div>
@@ -158,6 +157,18 @@ import { StatusBadgePipe, FormatTimePipe, FormatDatePipe } from '../../shared/pi
       </div>
     </app-sidebar-layout>
 
+    <!-- No-Show Confirm Modal -->
+    <app-confirm-modal
+      [open]="noShowModal"
+      title="Mark as No-Show"
+      message="Mark this patient as a no-show? This cannot be undone and the patient will be notified."
+      confirmText="Mark No-Show"
+      cancelText="Cancel"
+      [danger]="true"
+      (confirmed)="confirmNoShow()"
+      (cancelled)="noShowModal = false">
+    </app-confirm-modal>
+
     <!-- Flag Review Modal -->
     <app-confirm-modal
       [open]="flagModal"
@@ -200,6 +211,9 @@ export class ProviderAppointmentsComponent implements OnInit {
 
   flagModal = false;
   flagTarget: ReviewResponse | null = null;
+
+  noShowModal = false;
+  noShowTarget: AppointmentSummary | null = null;
 
   ngOnInit(): void {
     const userId = this.auth.currentUser()!.userId;
@@ -249,9 +263,16 @@ export class ProviderAppointmentsComponent implements OnInit {
     });
   }
 
-  markNoShow(appt: AppointmentSummary): void {
+  openNoShow(appt: AppointmentSummary): void {
+    this.noShowTarget = appt;
+    this.noShowModal = true;
+  }
+
+  confirmNoShow(): void {
+    this.noShowModal = false;
+    const appt = this.noShowTarget!;
     this.apptSvc.markNoShow(appt.appointmentId).subscribe({
-      next: () => { this.updateStatus(appt.appointmentId, 'NO_SHOW'); this.toast.info('Marked as no-show.'); },
+      next: () => { this.updateStatus(appt.appointmentId, 'NO_SHOW'); this.toast.info('Marked as no-show.'); this.noShowTarget = null; },
       error: () => this.toast.error('Failed.')
     });
   }
