@@ -41,11 +41,11 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  getProfile(userId: string): Observable<User> {
+  getProfile(userId: number): Observable<User> {
     return this.http.get<User>(`${this.base}/profile/${userId}`);
   }
 
-  updateProfile(userId: string, body: { fullName?: string; phone?: string; profilePicUrl?: string }): Observable<{ message: string; user: User }> {
+  updateProfile(userId: number, body: { fullName?: string; phone?: string; profilePicUrl?: string }): Observable<{ message: string; user: User }> {
     return this.http.put<{ message: string; user: User }>(`${this.base}/profile/${userId}`, body).pipe(
       tap(res => {
         const updated = { ...this.currentUser()!, ...res.user };
@@ -59,7 +59,7 @@ export class AuthService {
     return this.http.put<{ message: string }>(`${this.base}/password`, body);
   }
 
-  deactivateAccount(userId: string): Observable<{ message: string }> {
+  deactivateAccount(userId: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.base}/deactivate/${userId}`);
   }
 
@@ -84,7 +84,7 @@ export class AuthService {
     try {
       const payload = this.decodeJwt(token);
       const user: User = {
-        userId: String(payload['userId'] ?? ''),
+        userId: Number(payload['userId'] ?? 0),
         fullName: (payload['fullName'] as string) || (payload['name'] as string) || '',
         email: (payload['sub'] as string),
         role: payload['role'] as UserRole,

@@ -123,6 +123,7 @@ export class ProviderProfileSetupComponent {
     }).subscribe({
       next: () => {
         this.loading = false;
+        this.providerService.clearMyProfileCache();
         this.toast.success('Profile submitted for verification!');
         this.router.navigate(['/provider/dashboard']);
       },

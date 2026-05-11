@@ -138,32 +138,48 @@ export class SidebarLayoutComponent implements OnInit {
     if (!currentUser) return;
 
     if (currentUser.role === 'PROVIDER') {
+      // The cache in ProviderService ensures this HTTP call only fires once
+      // per session — on 404 we mark the cache so no further calls are made.
       this.providerService.getMyProfile(currentUser.userId).subscribe({
         next: (profile) => {
           if (profile.profilePicUrl) {
             this.profilePicUrl.set(profile.profilePicUrl);
           }
         },
-        error: () => {
+        error: (err) => {
+          if (err.status === 404) {
+            this.providerService.markNoProfile();
+          }
           if (currentUser.profilePicUrl) {
             this.profilePicUrl.set(currentUser.profilePicUrl);
           }
         }
       });
     } else {
+      // FIX: Seed the avatar from the cached user immediately so the sidebar
+      // renders correctly even if the network call below is skipped or slow.
       if (currentUser.profilePicUrl) {
         this.profilePicUrl.set(currentUser.profilePicUrl);
       }
-      this.auth.getProfile(currentUser.userId).subscribe({
-        next: (profile) => {
-          if (profile.profilePicUrl) {
-            this.profilePicUrl.set(profile.profilePicUrl);
-            // Use auth service method to safely update the signal
-            this.auth.updateCachedUser({ profilePicUrl: profile.profilePicUrl });
+
+      // FIX: Only fetch the fresh profile from the server when the cached user
+      // has no profilePicUrl.  Admin and patient users are fully populated at
+      // login time; making a redundant GET /api/auth/profile/{id} on every page
+      // load was the source of the noisy 404 errors (e.g. when userId=0 for an
+      // OAuth2 user whose JWT lacked the userId claim, or when Redis was down).
+      if (!currentUser.profilePicUrl && currentUser.userId > 0) {
+        this.auth.getProfile(currentUser.userId).subscribe({
+          next: (profile) => {
+            if (profile.profilePicUrl) {
+              this.profilePicUrl.set(profile.profilePicUrl);
+              this.auth.updateCachedUser({ profilePicUrl: profile.profilePicUrl });
+            }
+          },
+          error: () => {
+            // Silently ignore — sidebar still works without the profile picture
           }
-        },
-        error: () => {}
-      });
+        });
+      }
     }
   }
 

@@ -204,7 +204,7 @@ export class ProviderAppointmentsComponent implements OnInit {
   today: AppointmentSummary[] = [];
   all: AppointmentSummary[] = [];
   loading = true;
-  providerId = '';
+  providerId: number = 0;
 
   paymentStatuses: Record<string, string> = {};
   existingReviews: Record<string, ReviewResponse> = {};
@@ -311,7 +311,7 @@ export class ProviderAppointmentsComponent implements OnInit {
     });
   }
 
-  private updateStatus(id: string, status: string): void {
+  private updateStatus(id: number, status: string): void {
     const update = (list: AppointmentSummary[]) => {
       const idx = list.findIndex(a => a.appointmentId === id);
       if (idx !== -1) list[idx] = { ...list[idx], status: status as any };

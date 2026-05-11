@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SidebarLayoutComponent, NavItem } from '../../shared/components/sidebar-layout.component';
 import { NavigationService } from '../../core/services/navigation.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -45,12 +45,13 @@ import { IconComponent } from '../../shared/components/icon.component';
           @if (profile.verificationStatus === 'REJECTED') {
             <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
               <app-icon name="x-circle" sizeClass="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5"></app-icon>
-              <div>
+              <div class="flex-1">
                 <p class="font-semibold text-red-800">Verification Rejected</p>
                 @if (profile.rejectionReason) {
                   <p class="text-red-700 text-sm">Reason: {{ profile.rejectionReason }}</p>
                 }
-                <p class="text-red-600 text-sm mt-1">Please update your profile and contact support.</p>
+                <p class="text-red-600 text-sm mt-1">Update your profile details and resubmit for admin review.</p>
+                <a routerLink="/provider/profile" class="inline-block mt-3 btn-primary text-sm">Update & Resubmit</a>
               </div>
             </div>
           }
@@ -160,6 +161,7 @@ import { IconComponent } from '../../shared/components/icon.component';
 })
 export class ProviderDashboardComponent implements OnInit {
   auth = inject(AuthService);
+  private router = inject(Router);
   private navigationService = inject(NavigationService);
   private providerService = inject(ProviderService);
   private apptService = inject(AppointmentService);
@@ -193,11 +195,17 @@ export class ProviderDashboardComponent implements OnInit {
         this.profileLoading = false;
         this.loadAppointments(p.providerId);
       },
-      error: () => { this.profileLoading = false; this.todayLoading = false; }
+      error: (err) => {
+        this.profileLoading = false;
+        this.todayLoading = false;
+        if (err.status === 404) {
+          this.router.navigate(['/provider/profile-setup']);
+        }
+      }
     });
   }
 
-  loadAppointments(providerId: string): void {
+  loadAppointments(providerId: number): void {
     this.apptService.getProviderToday(providerId).subscribe({
       next: (a) => { this.today = a; this.todayLoading = false; },
       error: () => { this.todayLoading = false; }

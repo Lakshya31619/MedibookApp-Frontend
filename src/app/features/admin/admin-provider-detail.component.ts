@@ -171,7 +171,7 @@ export class AdminProviderDetailComponent implements OnInit {
   deleteModal = false;
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
+    const id = Number(this.route.snapshot.paramMap.get('id'));
     this.providerService.getById(id).subscribe({
       next: (p) => { this.provider = p; this.loading = false; },
       error: () => { this.loading = false; }

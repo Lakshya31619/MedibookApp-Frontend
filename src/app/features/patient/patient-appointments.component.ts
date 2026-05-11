@@ -487,7 +487,7 @@ export class PatientAppointmentsComponent implements OnInit {
   rescheduleAppt: AppointmentSummary | null = null;
   rescheduleDate = '';
   rescheduleSlots: SlotSummary[] = [];
-  rescheduleSlotId = '';
+  rescheduleSlotId: number | null = null;
   rescheduling = false;
 
   // Reviews
@@ -503,7 +503,7 @@ export class PatientAppointmentsComponent implements OnInit {
   payNowAppt: AppointmentSummary | null = null;
   payNowPaymentDetail: PaymentResponse | null = null;
   loadingPaymentDetail = false;
-  payingAppointmentId: string | null = null;
+  payingAppointmentId: number | null = null;
 
   dateStrip: { iso: string; day: number; month: string; dayName: string }[] = [];
 
@@ -614,7 +614,7 @@ export class PatientAppointmentsComponent implements OnInit {
   proceedPayNow(): void {
     if (!this.payNowAppt) return;
     const appt = this.payNowAppt;
-    const patientId = Number(this.auth.currentUser()!.userId);
+    const patientId = this.auth.currentUser()!.userId;
     const providerId = Number(appt.providerId);
 
     // If payment detail already loaded, proceed immediately
@@ -724,7 +724,7 @@ export class PatientAppointmentsComponent implements OnInit {
     this.rescheduleAppt = appt;
     this.rescheduleModal = true;
     this.rescheduleSlots = [];
-    this.rescheduleSlotId = '';
+    this.rescheduleSlotId = null;
     this.rescheduleDate = '';
   }
 
@@ -737,7 +737,7 @@ export class PatientAppointmentsComponent implements OnInit {
 
   confirmReschedule(): void {
     this.rescheduling = true;
-    this.apptService.reschedule(this.rescheduleAppt!.appointmentId, this.rescheduleSlotId).subscribe({
+    this.apptService.reschedule(this.rescheduleAppt!.appointmentId, this.rescheduleSlotId!).subscribe({
       next: () => {
         this.rescheduling = false;
         this.rescheduleModal = false;

@@ -2,12 +2,12 @@
 export type UserRole = 'PATIENT' | 'PROVIDER' | 'ADMIN';
 
 export interface User {
-  userId: string;
+  userId: number;
   fullName: string;
   email: string;
   phone?: string;
   role: UserRole;
-  active: boolean;        // FIX: backend renamed isActive → active
+  active: boolean;
   provider?: string;
   profilePicUrl?: string;
   createdAt: string;
@@ -37,22 +37,22 @@ export interface LoginRequest {
 export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ProviderSummary {
-  providerId: string;
-  providerName?: string;  // FIX: doctor's full name from backend
+  providerId: number;
+  providerName?: string;
   specialization: string;
   clinicName?: string;
   clinicAddress?: string;
   avgRating?: number;
-  available: boolean;     // FIX: backend renamed isAvailable → available
+  available: boolean;
   consultationFee?: number;
   profilePicUrl?: string;
   experienceYears?: number;
 }
 
 export interface ProviderResponse {
-  providerId: string;
-  userId: string;
-  providerName?: string;  // FIX: doctor's full name from backend
+  providerId: number;
+  userId: number;
+  providerName?: string;
   specialization: string;
   qualification: string;
   experienceYears: number;
@@ -60,8 +60,8 @@ export interface ProviderResponse {
   clinicName?: string;
   clinicAddress?: string;
   avgRating?: number;
-  available: boolean;     // FIX: backend renamed isAvailable → available
-  verified: boolean;      // FIX: backend renamed isVerified → verified
+  available: boolean;
+  verified: boolean;
   verificationStatus: VerificationStatus;
   rejectionReason?: string;
   consultationFee?: number;
@@ -70,7 +70,7 @@ export interface ProviderResponse {
 }
 
 export interface ProviderRegisterRequest {
-  userId: string;
+  userId: number;
   providerName?: string;
   specialization: string;
   qualification: string;
@@ -91,7 +91,7 @@ export interface SpecializationCount {
 export type RecurrenceType = 'DAILY' | 'WEEKLY' | 'WEEKDAYS';
 
 export interface SlotSummary {
-  slotId: string;
+  slotId: number;
   date: string;
   startTime: string;
   endTime: string;
@@ -99,20 +99,20 @@ export interface SlotSummary {
 }
 
 export interface SlotResponse {
-  slotId: string;
-  providerId: string;
+  slotId: number;
+  providerId: number;
   date: string;
   startTime: string;
   endTime: string;
   durationMinutes: number;
-  booked: boolean;        // FIX: backend renamed isBooked → booked
-  blocked: boolean;       // FIX: backend renamed isBlocked → blocked
+  booked: boolean;
+  blocked: boolean;
   recurrence?: string;
   createdAt: string;
 }
 
 export interface RecurringSlotRequest {
-  providerId: string;
+  providerId: number;
   startDate: string;
   endDate: string;
   startTime: string;
@@ -127,10 +127,10 @@ export type AppointmentStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SH
 export type ModeOfConsultation = 'IN_PERSON' | 'VIDEO';
 
 export interface AppointmentResponse {
-  appointmentId: string;
-  patientId: string;
-  providerId: string;
-  slotId: string;
+  appointmentId: number;
+  patientId: number;
+  providerId: number;
+  slotId: number;
   serviceType: string;
   appointmentDate: string;
   startTime: string;
@@ -144,9 +144,9 @@ export interface AppointmentResponse {
 }
 
 export interface AppointmentSummary {
-  appointmentId: string;
-  patientId: string;
-  providerId: string;
+  appointmentId: number;
+  patientId: number;
+  providerId: number;
   serviceType: string;
   appointmentDate: string;
   startTime: string;
@@ -157,7 +157,7 @@ export interface AppointmentSummary {
 }
 
 export interface AppointmentCount {
-  providerId: string;
+  providerId: number;
   total: number;
   completed: number;
   scheduled: number;
@@ -166,9 +166,9 @@ export interface AppointmentCount {
 }
 
 export interface BookAppointmentRequest {
-  patientId: number | string;
-  providerId: number | string;
-  slotId: number | string;
+  patientId: number;
+  providerId: number;
+  slotId: number;
   serviceType: string;
   modeOfConsultation: ModeOfConsultation;
   notes?: string;

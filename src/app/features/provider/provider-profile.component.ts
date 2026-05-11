@@ -35,9 +35,11 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
             } @else {
               <span class="badge-cancelled">Not Available</span>
             }
+            @if (profile.verificationStatus === 'APPROVED') {
             <button (click)="toggleAvailability()" class="text-sm text-navy-700 border border-navy-200 px-3 py-1 rounded-lg hover:bg-navy-50 transition-colors ml-2">
               {{ profile.available ? 'Set Unavailable' : 'Set Available' }}
             </button>
+            }
           </div>
 
           <div class="card mb-6">
@@ -77,7 +79,7 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
               <input type="url" [(ngModel)]="form.profilePicUrl" class="input-field">
             </div>
             <button (click)="saveProfile()" [disabled]="saving" class="btn-primary">
-              {{ saving ? 'Saving…' : 'Save Changes' }}
+              {{ saving ? 'Saving…' : (profile.verificationStatus === 'REJECTED' ? 'Save & Resubmit for Verification' : 'Save Changes') }}
             </button>
           </div>
 
@@ -138,9 +140,15 @@ export class ProviderProfileComponent implements OnInit {
   }
 
   saveProfile(): void {
+    const wasRejected = this.profile?.verificationStatus === 'REJECTED';
     this.saving = true;
     this.providerService.update(this.profile!.providerId, this.form).subscribe({
-      next: (p) => { this.saving = false; this.profile = p; this.toast.success('Profile updated!'); },
+      next: (p) => {
+        this.saving = false;
+        this.profile = p;
+        this.providerService.clearMyProfileCache();
+        this.toast.success(wasRejected ? 'Profile resubmitted for verification!' : 'Profile updated!');
+      },
       error: () => { this.saving = false; this.toast.error('Update failed.'); }
     });
   }

@@ -7,7 +7,7 @@ import { NavigationService } from '../../core/services/navigation.service';
 import { ProviderService } from '../../core/services/provider.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { ToastService } from '../../core/services/toast.service';
-import { SlotResponse } from '../../core/models';
+import { SlotResponse, RecurrenceType } from '../../core/models';
 import { FormatTimePipe, FormatDatePipe } from '../../shared/pipes/status.pipe';
 
 @Component({
@@ -184,7 +184,7 @@ export class ProviderSlotsComponent implements OnInit {
     { key: 'view', label: 'View Slots' },
   ];
   tab = 'single';
-  providerId = '';
+  providerId: number = 0;
   slots: SlotResponse[] = [];
   slotsLoading = false;
   saving = false;
@@ -192,7 +192,7 @@ export class ProviderSlotsComponent implements OnInit {
   single = { date: '', startTime: '', endTime: '' };
   recurring = {
     startDate: '', endDate: '', startTime: '', endTime: '',
-    slotDurationMinutes: 30, recurrenceType: 'WEEKDAYS' as 'DAILY' | 'WEEKLY' | 'WEEKDAYS'
+    slotDurationMinutes: 30, recurrenceType: 'WEEKDAYS' as RecurrenceType
   };
 
   ngOnInit(): void {

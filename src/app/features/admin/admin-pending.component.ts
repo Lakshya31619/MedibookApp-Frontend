@@ -122,7 +122,7 @@ export class AdminPendingComponent implements OnInit {
 
   providers: ProviderResponse[] = [];
   loading = true;
-  actionId = '';
+  actionId: number | null = null;
   rejectModal = false;
   rejectTarget: ProviderResponse | null = null;
 
@@ -137,11 +137,11 @@ export class AdminPendingComponent implements OnInit {
     this.actionId = p.providerId;
     this.providerService.approve(p.providerId).subscribe({
       next: () => {
-        this.actionId = '';
+        this.actionId = null;
         this.providers = this.providers.filter(x => x.providerId !== p.providerId);
         this.toast.success('Provider approved!');
       },
-      error: () => { this.actionId = ''; this.toast.error('Approval failed.'); }
+      error: () => { this.actionId = null; this.toast.error('Approval failed.'); }
     });
   }
 

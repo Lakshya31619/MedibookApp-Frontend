@@ -14,53 +14,53 @@ export class AppointmentService {
     return this.http.post<AppointmentResponse>(`${this.base}/book`, body);
   }
 
-  getById(id: string): Observable<AppointmentResponse> {
+  getById(id: number): Observable<AppointmentResponse> {
     return this.http.get<AppointmentResponse>(`${this.base}/${id}`);
   }
 
   // Patient
-  getPatientAppointments(patientId: string): Observable<AppointmentSummary[]> {
+  getPatientAppointments(patientId: number): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/patient/${patientId}`);
   }
 
-  getPatientUpcoming(patientId: string): Observable<AppointmentSummary[]> {
+  getPatientUpcoming(patientId: number): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/patient/${patientId}/upcoming`);
   }
 
-  cancel(id: string, reason?: string): Observable<AppointmentResponse> {
+  cancel(id: number, reason?: string): Observable<AppointmentResponse> {
     return this.http.put<AppointmentResponse>(`${this.base}/${id}/cancel`, { reason });
   }
 
-  reschedule(id: string, newSlotId: string, reason?: string): Observable<AppointmentResponse> {
+  reschedule(id: number, newSlotId: number, reason?: string): Observable<AppointmentResponse> {
     return this.http.put<AppointmentResponse>(`${this.base}/${id}/reschedule`, { newSlotId, reason });
   }
 
   // Provider/Admin
-  getProviderAppointments(providerId: string): Observable<AppointmentSummary[]> {
+  getProviderAppointments(providerId: number): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}`);
   }
 
-  getProviderToday(providerId: string): Observable<AppointmentSummary[]> {
+  getProviderToday(providerId: number): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/today`);
   }
 
-  getProviderUpcoming(providerId: string): Observable<AppointmentSummary[]> {
+  getProviderUpcoming(providerId: number): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/upcoming`);
   }
 
-  getProviderByDate(providerId: string, date: string): Observable<AppointmentSummary[]> {
+  getProviderByDate(providerId: number, date: string): Observable<AppointmentSummary[]> {
     return this.http.get<AppointmentSummary[]>(`${this.base}/provider/${providerId}/date`, { params: { date } });
   }
 
-  complete(id: string): Observable<AppointmentResponse> {
+  complete(id: number): Observable<AppointmentResponse> {
     return this.http.put<AppointmentResponse>(`${this.base}/${id}/complete`, null);
   }
 
-  markNoShow(id: string): Observable<AppointmentResponse> {
+  markNoShow(id: number): Observable<AppointmentResponse> {
     return this.http.put<AppointmentResponse>(`${this.base}/${id}/no-show`, null);
   }
 
-  getProviderCount(providerId: string): Observable<AppointmentCount> {
+  getProviderCount(providerId: number): Observable<AppointmentCount> {
     return this.http.get<AppointmentCount>(`${this.base}/provider/${providerId}/count`);
   }
 
@@ -69,7 +69,7 @@ export class AppointmentService {
     return this.http.get<AppointmentSummary[]>(`${this.base}/all`);
   }
 
-  updateStatus(id: string, value: string): Observable<AppointmentResponse> {
+  updateStatus(id: number, value: string): Observable<AppointmentResponse> {
     return this.http.put<AppointmentResponse>(`${this.base}/${id}/status`, null, { params: { value } });
   }
 }

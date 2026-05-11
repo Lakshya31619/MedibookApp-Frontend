@@ -204,7 +204,7 @@ export class ProviderDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.buildDateStrip();
-    const id = this.route.snapshot.paramMap.get('id')!;
+    const id = Number(this.route.snapshot.paramMap.get('id')!);
 
     this.providerService.getById(id).subscribe({
       next: (p) => {
