@@ -69,11 +69,12 @@ import { StatusBadgePipe, FormatDatePipe } from '../../shared/pipes/status.pipe'
                 @if (provider.profilePicUrl) {
                   <img [src]="provider.profilePicUrl" class="w-full h-full object-cover" alt="">
                 } @else {
-                  {{ provider.specialization[0] }}
+                  {{ provider.providerName?.[0] || provider.specialization[0] }}
                 }
               </div>
               <div>
-                <h2 class="text-xl font-serif text-navy-700 mb-1">{{ provider.specialization }}</h2>
+                <h2 class="text-xl font-serif text-navy-700 mb-1">{{ provider.providerName }}</h2>
+                <p class="text-gray-600">{{ provider.specialization }}</p>
                 <p class="text-gray-600">{{ provider.qualification }}</p>
                 <p class="text-gray-400 text-sm">{{ provider.experienceYears }} years experience</p>
                 @if (provider.consultationFee) {

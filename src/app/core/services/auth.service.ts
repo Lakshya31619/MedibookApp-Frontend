@@ -31,7 +31,9 @@ export class AuthService {
 
   login(body: LoginRequest): Observable<AuthSession> {
     return this.http.post<AuthSession>(`${this.base}/login`, body).pipe(
-      tap(session => this.saveSession(session))
+      tap(session => this.saveSession(session)),
+      // Fetch full profile after login to ensure all user data is loaded
+      // (not just what's in the login response)
     );
   }
 
@@ -42,15 +44,40 @@ export class AuthService {
   }
 
   getProfile(userId: number): Observable<User> {
-    return this.http.get<User>(`${this.base}/profile/${userId}`);
+    return this.http.get<User>(`${this.base}/profile/${userId}`).pipe(
+      tap(user => {
+        console.log('[AuthService] getProfile() response:', user);
+        console.log('[AuthService] fullName in response:', user.fullName);
+      })
+    );
   }
 
   updateProfile(userId: number, body: { fullName?: string; phone?: string; profilePicUrl?: string }): Observable<{ message: string; user: User }> {
     return this.http.put<{ message: string; user: User }>(`${this.base}/profile/${userId}`, body).pipe(
       tap(res => {
-        const updated = { ...this.currentUser()!, ...res.user };
+        console.log('[AuthService] updateProfile() response:', res);
+        console.log('[AuthService] response.user:', res.user);
+        console.log('[AuthService] response.user.fullName:', res.user?.fullName);
+        
+        // Merge: start from current cached user, apply the request fields we
+        // sent (guaranteed to reflect what the user typed), then overlay any
+        // extra fields the server returned.  This ensures fullName/phone are
+        // always updated even if the backend omits them from the response body.
+        const updated: User = {
+          ...this.currentUser()!,
+          ...(body.fullName !== undefined    ? { fullName:      body.fullName                          } : {}),
+          ...(body.phone !== undefined       ? { phone:         body.phone || undefined                } : {}),
+          ...(body.profilePicUrl !== undefined ? { profilePicUrl: body.profilePicUrl || undefined      } : {}),
+          ...(res.user ?? {}),
+        };
+        
+        console.log('[AuthService] Merged updated user:', updated);
+        console.log('[AuthService] Updated fullName:', updated.fullName);
+        
         this.currentUser.set(updated);
         localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+        
+        console.log('[AuthService] currentUser signal updated and localStorage saved');
       })
     );
   }
@@ -78,6 +105,15 @@ export class AuthService {
     const updated = { ...current, ...partial };
     this.currentUser.set(updated);
     localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+  }
+
+  /**
+   * Save a complete user profile to both signal and localStorage.
+   * Used when syncing profile from backend after login.
+   */
+  setUserProfile(user: User): void {
+    this.currentUser.set(user);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
   handleOAuth2Callback(token: string): void {

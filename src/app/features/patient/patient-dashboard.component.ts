@@ -177,7 +177,7 @@ interface FollowUp {
                     <p class="text-sm text-gray-500">{{ appt.appointmentDate | formatDate }} · {{ appt.startTime | formatTime }}</p>
                     <p class="text-xs text-gray-400 mt-0.5">{{ appt.modeOfConsultation === 'VIDEO' ? '📹 Video' : '🏥 In-Person' }}</p>
                   </div>
-                  <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                  <span [ngClass]="appt.status | statusBadge">{{ getStatusLabel(appt.status) }}</span>
                 </div>
               }
             </div>
@@ -231,6 +231,16 @@ export class PatientDashboardComponent implements OnInit {
       { icon: '❌', value: this.cancelledCount, label: 'Cancelled' },
       { icon: '🏥', value: this.all.length, label: 'Total Visits' },
     ];
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'SCHEDULED': 'Scheduled',
+      'COMPLETED': 'Completed',
+      'CANCELLED': 'Cancelled',
+      'NO_SHOW': 'Missed',
+    };
+    return labels[status] || status;
   }
 
   ngOnInit(): void {

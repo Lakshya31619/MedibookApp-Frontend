@@ -80,7 +80,7 @@ import { IconComponent } from '../../shared/components/icon.component';
               }
             </div>
             <div class="flex-1">
-              <h2 class="text-2xl font-serif text-navy-700 mb-1">Dr. {{ (auth.currentUser()?.fullName || 'Provider') }}</h2>
+              <h2 class="text-2xl font-serif text-navy-700 mb-1">Dr. {{ (auth.currentUser()?.fullName || profile.providerName || 'Provider') }}</h2>
               <p class="text-lg text-navy-600 font-medium mb-2">{{ profile.specialization }}</p>
               <p class="text-gray-600 text-sm">{{ profile.qualification }} • {{ profile.experienceYears }} years experience</p>
               @if (profile.clinicName) {

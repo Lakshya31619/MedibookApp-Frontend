@@ -90,7 +90,7 @@ declare const Razorpay: any;
                     </div>
                     <div>
                       <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                        <span [ngClass]="appt.status | statusBadge">{{ getStatusLabel(appt.status) }}</span>
                         <!-- Payment status badge -->
                         @if (paymentStatuses[appt.appointmentId]) {
                           <span class="text-xs font-medium px-2 py-0.5 rounded-full border"
@@ -153,9 +153,9 @@ declare const Razorpay: any;
         }
 
         <!-- Past -->
-        @if (!loading && tab === 'past') {
+        @if (tab === 'past') {
           <!-- Status filter pills -->
-          @if (past.length > 0) {
+          @if (!loading && past.length > 0) {
             <div class="flex flex-wrap gap-2 mb-5">
               @for (f of statusFilters; track f.value) {
                 <button
@@ -172,11 +172,12 @@ declare const Razorpay: any;
             </div>
           }
 
-          @if (filteredPast.length === 0) {
+          @if (!loading && filteredPast.length === 0) {
             <div class="card text-center py-14">
               <p class="text-slate-400">{{ past.length === 0 ? 'No past appointments found.' : 'No ' + pastFilter.toLowerCase() + ' appointments.' }}</p>
             </div>
           }
+          @if (!loading) {
           <div class="space-y-3">
             @for (appt of filteredPast; track appt.appointmentId) {
               <div class="card">
@@ -187,7 +188,7 @@ declare const Razorpay: any;
                     </div>
                     <div>
                       <div class="flex items-center gap-2 mb-0.5">
-                        <span [ngClass]="appt.status | statusBadge">{{ appt.status }}</span>
+                        <span [ngClass]="appt.status | statusBadge">{{ getStatusLabel(appt.status) }}</span>
                       </div>
                       <p class="font-semibold text-slate-900 text-sm">{{ appt.serviceType }}</p>
                       <p class="text-xs text-slate-500 mt-0.5">
@@ -236,6 +237,7 @@ declare const Razorpay: any;
               }
             }
           </div>
+          }
         }
       </div>
     </app-sidebar-layout>
@@ -429,6 +431,7 @@ export class PatientAppointmentsComponent implements OnInit {
   upcoming: AppointmentSummary[] = [];
   past: AppointmentSummary[] = [];
   loading = true;
+  pastLoaded = false;
   pastFilter: string = 'ALL';
 
   readonly statusFilters = [
@@ -510,19 +513,41 @@ export class PatientAppointmentsComponent implements OnInit {
   ngOnInit(): void {
     this.buildDateStrip();
     const userId = this.auth.currentUser()?.userId!;
-    this.apptService.getPatientUpcoming(userId).subscribe({
-      next: (a) => {
-        this.upcoming = a;
+    
+    // Load ALL appointments at once (both upcoming and past) so accurate count displays from start
+    this.apptService.getPatientAppointments(userId).subscribe({
+      next: (all) => {
+        const now = new Date();
+        
+        // Separate into upcoming (future scheduled) and past (past date or terminal status)
+        this.upcoming = all.filter(a => {
+          const apptDate = new Date(a.appointmentDate);
+          return apptDate >= now && a.status === 'SCHEDULED';
+        });
+        
+        this.past = all.filter(a => {
+          const apptDate = new Date(a.appointmentDate);
+          return apptDate < now || a.status === 'CANCELLED' || a.status === 'COMPLETED' || a.status === 'NO_SHOW';
+        });
+        
+        this.pastLoaded = true;
         this.loading = false;
-        // Fetch payment status for all upcoming appointments to surface unpaid ones
-        a.forEach(appt => {
+        
+        // Fetch payment status and reviews for all appointments
+        all.forEach(appt => {
           this.paymentService.getStatus(Number(appt.appointmentId)).subscribe({
             next: (res) => {
-              this.paymentStatuses[appt.appointmentId] =
-                res.status === 'NOT_FOUND' ? 'PENDING' : res.status;
+              this.paymentStatuses[appt.appointmentId] = res.status === 'NOT_FOUND' ? 'PENDING' : res.status;
             },
             error: () => { this.paymentStatuses[appt.appointmentId] = 'PENDING'; }
           });
+          
+          if (appt.status === 'COMPLETED') {
+            this.reviewService.getByAppointment(Number(appt.appointmentId)).subscribe({
+              next: (review) => { this.existingReviews[appt.appointmentId] = review; },
+              error: () => {}
+            });
+          }
         });
       },
       error: () => { this.loading = false; }
@@ -530,29 +555,8 @@ export class PatientAppointmentsComponent implements OnInit {
   }
 
   loadPast(): void {
-    if (this.past.length) return;
-    const userId = this.auth.currentUser()?.userId!;
-    this.apptService.getPatientAppointments(userId).subscribe({
-      next: (all) => {
-        this.past = all.filter(a => a.status !== 'SCHEDULED');
-        this.past.forEach(a => {
-          this.paymentService.getStatus(Number(a.appointmentId)).subscribe({
-            next: (res) => {
-              this.paymentStatuses[a.appointmentId] =
-                res.status === 'NOT_FOUND' ? 'PENDING' : res.status;
-            },
-            error: () => { this.paymentStatuses[a.appointmentId] = 'PENDING'; }
-          });
-          if (a.status === 'COMPLETED') {
-            this.reviewService.getByAppointment(Number(a.appointmentId)).subscribe({
-              next: (review) => { this.existingReviews[a.appointmentId] = review; },
-              error: () => {}
-            });
-          }
-        });
-      },
-      error: () => { this.toast.error('Failed to load past appointments.'); }
-    });
+    // Already loaded in ngOnInit, so nothing to do
+    return;
   }
 
   // ─── Cancel ───────────────────────────────────────────────────────────────────
@@ -773,6 +777,8 @@ export class PatientAppointmentsComponent implements OnInit {
     this.submittingReview = true;
     const userId = this.auth.currentUser()?.userId!;
     const existing = this.existingReviews[this.reviewAppt.appointmentId];
+    const reviewApptId = this.reviewAppt.appointmentId;
+    
     if (existing) {
       this.reviewService.updateReview(existing.reviewId, {
         rating: this.reviewRating,
@@ -780,12 +786,26 @@ export class PatientAppointmentsComponent implements OnInit {
         isAnonymous: this.reviewAnonymous
       }).subscribe({
         next: (updated) => {
-          this.submittingReview = false;
-          this.existingReviews[this.reviewAppt!.appointmentId] = updated;
-          this.reviewModal = false;
-          this.toast.success('Review updated successfully!');
+          try {
+            this.existingReviews[reviewApptId] = updated;
+            // Small delay to ensure backend cache is invalidated
+            setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 500);
+            this.toast.success('Review updated successfully!');
+          } catch (e) {
+            console.error('Error updating review in UI:', e);
+          }
         },
-        error: () => { this.submittingReview = false; this.toast.error('Failed to update review.'); }
+        error: (err) => { 
+          console.error('Update review error:', err);
+          this.toast.error('Failed to update review. Please try again.');
+          // Still attempt to refresh in case review was saved despite error
+          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 1000);
+        },
+        complete: () => {
+          this.submittingReview = false;
+          this.resetReviewForm();
+          this.reviewModal = false;
+        }
       });
     } else {
       this.reviewService.addReview({
@@ -797,14 +817,64 @@ export class PatientAppointmentsComponent implements OnInit {
         isAnonymous: this.reviewAnonymous
       }).subscribe({
         next: (review) => {
-          this.submittingReview = false;
-          this.existingReviews[this.reviewAppt!.appointmentId] = review;
-          this.reviewModal = false;
-          this.toast.success('Thank you for your review!');
+          try {
+            this.existingReviews[reviewApptId] = review;
+            // Small delay to ensure backend cache is invalidated
+            setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 500);
+            this.toast.success('Thank you for your review!');
+          } catch (e) {
+            console.error('Error adding review to UI:', e);
+          }
         },
-        error: () => { this.submittingReview = false; this.toast.error('Failed to submit review.'); }
+        error: (err) => { 
+          console.error('Add review error:', err);
+          this.toast.error('Failed to submit review. Please try again.');
+          // Still attempt to refresh in case review was saved despite error
+          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 1000);
+        },
+        complete: () => {
+          this.submittingReview = false;
+          this.resetReviewForm();
+          this.reviewModal = false;
+        }
       });
     }
+  }
+
+  private resetReviewForm(): void {
+    this.reviewRating = 0;
+    this.reviewComment = '';
+    this.reviewAnonymous = false;
+    this.reviewAppt = null;
+  }
+
+  /**
+   * Fetch review for appointment and update cache.
+   * Called after submitting/updating a review to ensure UI is fresh.
+   */
+  private refreshReviewForAppointment(appointmentId: number): void {
+    this.reviewService.getByAppointment(appointmentId).subscribe({
+      next: (review) => {
+        this.existingReviews[appointmentId] = review;
+      },
+      error: (err) => {
+        console.error('Failed to refresh review:', err);
+      }
+    });
+  }
+
+  /**
+   * Get readable display label for appointment status.
+   * Maps NO_SHOW to "Missed" for better UX.
+   */
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'SCHEDULED': 'Scheduled',
+      'COMPLETED': 'Completed',
+      'CANCELLED': 'Cancelled',
+      'NO_SHOW': 'Missed',
+    };
+    return labels[status] || status;
   }
 
   buildDateStrip(): void {

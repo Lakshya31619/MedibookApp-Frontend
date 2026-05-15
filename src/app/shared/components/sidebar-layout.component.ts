@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { ProviderService } from '../../core/services/provider.service';
@@ -31,12 +31,15 @@ export interface NavItem {
         [ngClass]="mobileOpen() ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
         <!-- Logo -->
-        <div class="flex items-center gap-2.5 px-6 py-5 border-b border-white/10 dark:border-gray-700">
+        <button
+          (click)="goHome()"
+          class="flex items-center gap-2.5 px-6 py-5 border-b border-white/10 dark:border-gray-700 w-full bg-transparent hover:bg-white/5 transition-colors cursor-pointer"
+          title="Go to homepage">
           <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
             <span class="text-white text-sm font-bold">M</span>
           </div>
           <span class="font-serif text-xl text-white">MediBook</span>
-        </div>
+        </button>
 
         <!-- User info -->
         <div class="px-6 py-4 border-b border-white/10 dark:border-gray-700">
@@ -115,6 +118,7 @@ export class SidebarLayoutComponent implements OnInit {
   auth = inject(AuthService);
   theme = inject(ThemeService);
   private providerService = inject(ProviderService);
+  private router = inject(Router);
   mobileOpen = signal(false);
   profilePicUrl = signal<string | null>(null);
 
@@ -144,6 +148,11 @@ export class SidebarLayoutComponent implements OnInit {
         next: (profile) => {
           if (profile.profilePicUrl) {
             this.profilePicUrl.set(profile.profilePicUrl);
+          }
+          // Sync providerName into the auth cache so the sidebar (and dashboard)
+          // can show the real name even when fullName wasn't populated at login.
+          if (profile.providerName && !currentUser.fullName) {
+            this.auth.updateCachedUser({ fullName: profile.providerName });
           }
         },
         error: (err) => {
@@ -181,6 +190,11 @@ export class SidebarLayoutComponent implements OnInit {
         });
       }
     }
+  }
+
+  goHome(): void {
+    this.router.navigate(['']);
+    this.mobileOpen.set(false);
   }
 
   logout(): void {

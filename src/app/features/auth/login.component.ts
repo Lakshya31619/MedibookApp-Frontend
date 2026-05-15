@@ -101,9 +101,23 @@ export class LoginComponent {
     this.loading = true;
     this.auth.login({ email: this.email, password: this.password }).subscribe({
       next: (session) => {
-        this.loading = false;
-        this.toast.success(`Welcome back, ${session.user.fullName}!`);
-        this.auth.redirectByRole(session.user.role);
+        // After login, fetch the full profile to ensure all profile data is loaded
+        // (fullName, phone, profilePicUrl, etc.) from the backend
+        this.auth.getProfile(session.user.userId).subscribe({
+          next: (fullProfile) => {
+            // Save the full profile to both signal and localStorage
+            this.auth.setUserProfile(fullProfile);
+            this.loading = false;
+            this.toast.success(`Welcome back, ${fullProfile.fullName}!`);
+            this.auth.redirectByRole(fullProfile.role);
+          },
+          error: () => {
+            // Even if profile fetch fails, still allow login with what we have
+            this.loading = false;
+            this.toast.success(`Welcome back, ${session.user.fullName}!`);
+            this.auth.redirectByRole(session.user.role);
+          }
+        });
       },
       error: (err) => {
         this.loading = false;

@@ -43,6 +43,17 @@ import { StatusBadgePipe } from '../../shared/pipes/status.pipe';
           </div>
 
           <div class="card mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Personal Information</h2>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input type="text" [(ngModel)]="fullName" class="input-field" placeholder="Dr. First Last">
+            </div>
+            <button (click)="saveName()" [disabled]="savingName" class="btn-secondary">
+              {{ savingName ? 'Saving…' : 'Save Name' }}
+            </button>
+          </div>
+
+          <div class="card mb-6">
             <h2 class="text-lg font-semibold text-gray-700 mb-4">Professional Details</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
@@ -119,14 +130,21 @@ export class ProviderProfileComponent implements OnInit {
   profile: ProviderResponse | null = null;
   loading = true;
   saving = false;
+  savingName = false;
+  fullName = '';
   form: any = {};
   currentPwd = ''; newPwd = ''; changingPwd = false;
 
   ngOnInit(): void {
     const userId = this.auth.currentUser()!.userId;
+    this.fullName = this.auth.currentUser()?.fullName || '';
     this.providerService.getMyProfile(userId).subscribe({
       next: (p) => {
         this.profile = p;
+        // Use providerName as fallback if fullName not in auth cache
+        if (!this.fullName && p.providerName) {
+          this.fullName = p.providerName;
+        }
         this.form = {
           specialization: p.specialization, qualification: p.qualification,
           experienceYears: p.experienceYears, consultationFee: p.consultationFee,
@@ -136,6 +154,26 @@ export class ProviderProfileComponent implements OnInit {
         this.loading = false;
       },
       error: () => { this.loading = false; }
+    });
+  }
+
+  saveName(): void {
+    if (!this.fullName.trim()) return;
+    this.savingName = true;
+    const userId = this.auth.currentUser()!.userId;
+    this.auth.updateProfile(userId, { fullName: this.fullName.trim() }).subscribe({
+      next: () => {
+        this.savingName = false;
+        // Also update providerName so the provider record is in sync
+        if (this.profile) {
+          this.providerService.update(this.profile.providerId, { providerName: this.fullName.trim() } as any).subscribe({
+            next: (p) => { this.profile = p; this.providerService.clearMyProfileCache(); },
+            error: () => {}
+          });
+        }
+        this.toast.success('Name updated!');
+      },
+      error: () => { this.savingName = false; this.toast.error('Failed to update name.'); }
     });
   }
 
