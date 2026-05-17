@@ -166,3 +166,4 @@ export const environment = {
 - ✅ Confirmation modals for all destructive actions
 - ✅ Booking flow: browse → select date → pick slot → confirm → call API
 - ✅ Google OAuth2 callback with JWT decoding
+=======
