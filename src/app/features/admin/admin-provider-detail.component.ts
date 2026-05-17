@@ -52,7 +52,7 @@ import { StatusBadgePipe, FormatDatePipe } from '../../shared/pipes/status.pipe'
               @if (provider.verificationStatus === 'PENDING' || provider.verificationStatus === 'REJECTED') {
                 <button (click)="approve()" [disabled]="acting" class="btn-emerald text-sm py-2">Approve</button>
               }
-              @if (provider.verificationStatus === 'PENDING' || provider.verificationStatus === 'APPROVED') {
+              @if (provider.verificationStatus === 'PENDING') {
                 <button (click)="openRejectModal()" class="btn-danger text-sm py-2">Reject</button>
               }
               @if (provider.verificationStatus === 'APPROVED') {

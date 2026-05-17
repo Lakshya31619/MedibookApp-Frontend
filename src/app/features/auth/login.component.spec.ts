@@ -13,24 +13,35 @@ describe('LoginComponent', () => {
   let toastSpy: jasmine.SpyObj<ToastService>;
   let router: Router;
 
+  const mockUser = {
+    userId: 1,
+    fullName: 'Alice',
+    email: 'a@b.com',
+    role: 'PATIENT' as const,
+    active: true,
+    createdAt: '',
+  };
+
   const mockSession = {
     token: 'tok',
     refreshToken: 'ref',
-    tokenType: 'Bearer',       // ✅ FIXED
-    expiresIn: 3600,           // ✅ FIXED
-    user: {
-      userId: '1',
-      fullName: 'Alice',
-      email: 'a@b.com',
-      role: 'PATIENT' as const,
-      active: true,
-      createdAt: '',
-    },
+    tokenType: 'Bearer',
+    expiresIn: 3600,
+    user: mockUser,
   };
 
   beforeEach(async () => {
-    authSpy = jasmine.createSpyObj('AuthService', ['login', 'redirectByRole']);
+    authSpy = jasmine.createSpyObj('AuthService', [
+      'login',
+      'redirectByRole',
+      'getProfile',
+      'setUserProfile',
+    ]);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'warning', 'error']);
+
+    // Default: getProfile returns the full user profile
+    authSpy.getProfile.and.returnValue(of(mockUser));
+    authSpy.setUserProfile.and.stub();
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent, RouterTestingModule],
@@ -54,9 +65,9 @@ describe('LoginComponent', () => {
 
   it('should call auth.login with email and password on submit', () => {
     authSpy.login.and.returnValue(of(mockSession));
+
     component.email = 'a@b.com';
     component.password = 'secret';
-
     component.onLogin();
 
     expect(authSpy.login).toHaveBeenCalledWith({
@@ -74,11 +85,38 @@ describe('LoginComponent', () => {
     expect(authSpy.redirectByRole).toHaveBeenCalledWith('PATIENT');
   });
 
-  it('should set loading true during request and false after', () => {
+  it('should set loading to false after successful login', () => {
     authSpy.login.and.returnValue(of(mockSession));
 
     component.onLogin();
 
+    expect(component.loading).toBeFalse();
+  });
+
+  it('should call getProfile with userId after login', () => {
+    authSpy.login.and.returnValue(of(mockSession));
+
+    component.onLogin();
+
+    expect(authSpy.getProfile).toHaveBeenCalledWith(1);
+  });
+
+  it('should call setUserProfile with full profile after login', () => {
+    authSpy.login.and.returnValue(of(mockSession));
+
+    component.onLogin();
+
+    expect(authSpy.setUserProfile).toHaveBeenCalledWith(mockUser);
+  });
+
+  it('should still login if getProfile fails', () => {
+    authSpy.login.and.returnValue(of(mockSession));
+    authSpy.getProfile.and.returnValue(throwError(() => new Error('Network error')));
+
+    component.onLogin();
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Welcome back, Alice!');
+    expect(authSpy.redirectByRole).toHaveBeenCalledWith('PATIENT');
     expect(component.loading).toBeFalse();
   });
 
@@ -113,9 +151,7 @@ describe('LoginComponent', () => {
 
   it('should toggle showPwd', () => {
     expect(component.showPwd).toBeFalse();
-
     component.showPwd = true;
-
     expect(component.showPwd).toBeTrue();
   });
 

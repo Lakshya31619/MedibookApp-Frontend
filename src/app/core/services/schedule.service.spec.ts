@@ -11,7 +11,7 @@ describe('ScheduleService', () => {
   const base = `${environment.apiUrl}/api/slots`;
 
   const mockSummary: SlotSummary = {
-    slotId: 's1',
+    slotId: 1,
     date: '2026-06-01',
     startTime: '09:00',
     endTime: '09:30',
@@ -19,8 +19,8 @@ describe('ScheduleService', () => {
   };
 
   const mockSlot: SlotResponse = {
-    slotId: 's1',
-    providerId: 'p1',
+    slotId: 1,
+    providerId: 1,
     date: '2026-06-01',
     startTime: '09:00',
     endTime: '09:30',
@@ -44,13 +44,13 @@ describe('ScheduleService', () => {
   // ── getAvailableByDate ────────────────────────────────────────────────────
 
   it('should GET /slots/available/:providerId with date param', () => {
-    service.getAvailableByDate('p1', '2026-06-01').subscribe(res => {
+    service.getAvailableByDate(1, '2026-06-01').subscribe(res => {
       expect(res.length).toBe(1);
-      expect(res[0].slotId).toBe('s1');
+      expect(res[0].slotId).toBe(1);
     });
 
     const req = httpMock.expectOne(
-      r => r.url === `${base}/available/p1` && r.params.get('date') === '2026-06-01'
+      r => r.url === `${base}/available/1` && r.params.get('date') === '2026-06-01'
     );
     expect(req.request.method).toBe('GET');
     req.flush([mockSummary]);
@@ -59,11 +59,11 @@ describe('ScheduleService', () => {
   // ── getFutureAvailable ────────────────────────────────────────────────────
 
   it('should GET /slots/provider/:id/available', () => {
-    service.getFutureAvailable('p1').subscribe(res => {
+    service.getFutureAvailable(1).subscribe(res => {
       expect(Array.isArray(res)).toBeTrue();
     });
 
-    const req = httpMock.expectOne(`${base}/provider/p1/available`);
+    const req = httpMock.expectOne(`${base}/provider/1/available`);
     expect(req.request.method).toBe('GET');
     req.flush([mockSummary]);
   });
@@ -71,24 +71,24 @@ describe('ScheduleService', () => {
   // ── getSlotCount ──────────────────────────────────────────────────────────
 
   it('should GET /slots/provider/:id/count', () => {
-    service.getSlotCount('p1').subscribe(res => {
+    service.getSlotCount(1).subscribe(res => {
       expect(res.availableSlots).toBe(12);
     });
 
-    const req = httpMock.expectOne(`${base}/provider/p1/count`);
+    const req = httpMock.expectOne(`${base}/provider/1/count`);
     expect(req.request.method).toBe('GET');
-    req.flush({ providerId: 'p1', availableSlots: 12 });
+    req.flush({ providerId: 1, availableSlots: 12 });
   });
 
   // ── getSlot ───────────────────────────────────────────────────────────────
 
   it('should GET /slots/:slotId', () => {
-    service.getSlot('s1').subscribe(res => {
-      expect(res.slotId).toBe('s1');
+    service.getSlot(1).subscribe(res => {
+      expect(res.slotId).toBe(1);
       expect(res.booked).toBeFalse();
     });
 
-    const req = httpMock.expectOne(`${base}/s1`);
+    const req = httpMock.expectOne(`${base}/1`);
     expect(req.request.method).toBe('GET');
     req.flush(mockSlot);
   });
@@ -96,11 +96,11 @@ describe('ScheduleService', () => {
   // ── getProviderSlots ──────────────────────────────────────────────────────
 
   it('should GET /slots/provider/:id', () => {
-    service.getProviderSlots('p1').subscribe(res => {
+    service.getProviderSlots(1).subscribe(res => {
       expect(res.length).toBe(1);
     });
 
-    const req = httpMock.expectOne(`${base}/provider/p1`);
+    const req = httpMock.expectOne(`${base}/provider/1`);
     expect(req.request.method).toBe('GET');
     req.flush([mockSlot]);
   });
@@ -108,10 +108,10 @@ describe('ScheduleService', () => {
   // ── getProviderSlotsInRange ───────────────────────────────────────────────
 
   it('should GET /slots/provider/:id/range with date params', () => {
-    service.getProviderSlotsInRange('p1', '2026-06-01', '2026-06-30').subscribe();
+    service.getProviderSlotsInRange(1, '2026-06-01', '2026-06-30').subscribe();
 
     const req = httpMock.expectOne(
-      r => r.url === `${base}/provider/p1/range` &&
+      r => r.url === `${base}/provider/1/range` &&
            r.params.get('startDate') === '2026-06-01' &&
            r.params.get('endDate') === '2026-06-30'
     );
@@ -122,7 +122,7 @@ describe('ScheduleService', () => {
   // ── addSlot ───────────────────────────────────────────────────────────────
 
   it('should POST to /slots/add', () => {
-    const body = { providerId: 'p1', date: '2026-06-01', startTime: '10:00', endTime: '10:30' };
+    const body = { providerId: 1, date: '2026-06-01', startTime: '10:00', endTime: '10:30' };
 
     service.addSlot(body).subscribe(res => {
       expect(res.slotId).toBeTruthy();
@@ -138,7 +138,7 @@ describe('ScheduleService', () => {
 
   it('should POST to /slots/bulk', () => {
     const body = {
-      providerId: 'p1',
+      providerId: 1,
       slots: [{ date: '2026-06-01', startTime: '09:00', endTime: '09:30' }],
     };
 
@@ -156,7 +156,7 @@ describe('ScheduleService', () => {
 
   it('should POST to /slots/recurring', () => {
     const body: RecurringSlotRequest = {
-      providerId: 'p1',
+      providerId: 1,
       startDate: '2026-06-01',
       endDate: '2026-06-30',
       startTime: '09:00',
@@ -178,11 +178,11 @@ describe('ScheduleService', () => {
   // ── blockSlot ─────────────────────────────────────────────────────────────
 
   it('should PUT to /slots/:id/block', () => {
-    service.blockSlot('s1').subscribe(res => {
+    service.blockSlot(1).subscribe(res => {
       expect(res.blocked).toBeTrue();
     });
 
-    const req = httpMock.expectOne(`${base}/s1/block`);
+    const req = httpMock.expectOne(`${base}/1/block`);
     expect(req.request.method).toBe('PUT');
     req.flush({ ...mockSlot, blocked: true });
   });
@@ -190,11 +190,11 @@ describe('ScheduleService', () => {
   // ── unblockSlot ───────────────────────────────────────────────────────────
 
   it('should PUT to /slots/:id/unblock', () => {
-    service.unblockSlot('s1').subscribe(res => {
+    service.unblockSlot(1).subscribe(res => {
       expect(res.blocked).toBeFalse();
     });
 
-    const req = httpMock.expectOne(`${base}/s1/unblock`);
+    const req = httpMock.expectOne(`${base}/1/unblock`);
     expect(req.request.method).toBe('PUT');
     req.flush({ ...mockSlot, blocked: false });
   });
@@ -202,11 +202,11 @@ describe('ScheduleService', () => {
   // ── deleteSlot ────────────────────────────────────────────────────────────
 
   it('should DELETE /slots/:id', () => {
-    service.deleteSlot('s1').subscribe(res => {
+    service.deleteSlot(1).subscribe(res => {
       expect(res.message).toBeTruthy();
     });
 
-    const req = httpMock.expectOne(`${base}/s1`);
+    const req = httpMock.expectOne(`${base}/1`);
     expect(req.request.method).toBe('DELETE');
     req.flush({ message: 'Slot deleted' });
   });

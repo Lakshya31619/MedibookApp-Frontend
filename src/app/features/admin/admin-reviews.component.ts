@@ -239,6 +239,24 @@ export class AdminReviewsComponent implements OnInit {
     });
   }
 
+  private refreshReviews(): void {
+    // Refresh flagged reviews
+    this.reviewSvc.getFlagged().subscribe({
+      next: (r) => { this.flagged = r; },
+      error: (err) => { console.error('Error refreshing flagged reviews:', err); }
+    });
+    // Refresh all reviews if already loaded
+    if (this.all.length > 0) {
+      this.reviewSvc.getAll().subscribe({
+        next: (r) => { 
+          this.all = r; 
+          this.applyFilter(); 
+        },
+        error: (err) => { console.error('Error refreshing all reviews:', err); }
+      });
+    }
+  }
+
   verifyReview(review: ReviewResponse): void {
     this.reviewSvc.verifyReview(review.reviewId).subscribe({
       next: () => {
@@ -246,7 +264,12 @@ export class AdminReviewsComponent implements OnInit {
         this.flagged = this.flagged.filter(r => r.reviewId !== review.reviewId);
         this.toast.success('Review verified.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error verifying review:', err);
+        this.toast.error('Failed to verify review. Please try again.');
+        // Try to refresh after a delay to ensure backend changes are persisted
+        setTimeout(() => this.refreshReviews(), 500);
+      }
     });
   }
 
@@ -257,7 +280,12 @@ export class AdminReviewsComponent implements OnInit {
         this.flagged = this.flagged.filter(r => r.reviewId !== review.reviewId);
         this.toast.info('Review unflagged.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error unflagging review:', err);
+        this.toast.error('Failed to unflag review. Please try again.');
+        // Try to refresh after a delay to ensure backend changes are persisted
+        setTimeout(() => this.refreshReviews(), 500);
+      }
     });
   }
 
@@ -273,7 +301,12 @@ export class AdminReviewsComponent implements OnInit {
         this.applyFilter();
         this.toast.success('Review deleted and provider rating updated.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error deleting review:', err);
+        this.toast.error('Failed to delete review. Refreshing to check status...');
+        // Always refresh after delete error to ensure UI is in sync
+        setTimeout(() => this.refreshReviews(), 500);
+      }
     });
   }
 

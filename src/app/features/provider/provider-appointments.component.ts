@@ -283,7 +283,11 @@ export class ProviderAppointmentsComponent implements OnInit {
         this.existingReviews[review.appointmentId] = { ...review, isVerified: true };
         this.toast.success('Review verified.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error verifying review:', err);
+        this.toast.error('Failed to verify review. Refreshing to check status...');
+        setTimeout(() => this.refreshReview(review), 500);
+      }
     });
   }
 
@@ -297,7 +301,11 @@ export class ProviderAppointmentsComponent implements OnInit {
         this.existingReviews[review.appointmentId] = { ...review, isFlagged: true, flagReason: reason };
         this.toast.success('Review flagged for moderation.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error flagging review:', err);
+        this.toast.error('Failed to flag review. Refreshing to check status...');
+        setTimeout(() => this.refreshReview(review), 500);
+      }
     });
   }
 
@@ -307,7 +315,22 @@ export class ProviderAppointmentsComponent implements OnInit {
         this.existingReviews[review.appointmentId] = { ...review, isFlagged: false, flagReason: null };
         this.toast.info('Review unflagged.');
       },
-      error: () => this.toast.error('Failed.')
+      error: (err) => {
+        console.error('Error unflagging review:', err);
+        this.toast.error('Failed to unflag review. Refreshing to check status...');
+        setTimeout(() => this.refreshReview(review), 500);
+      }
+    });
+  }
+
+  private refreshReview(review: ReviewResponse): void {
+    this.reviewSvc.getByAppointment(review.appointmentId).subscribe({
+      next: (refreshed) => {
+        this.existingReviews[review.appointmentId] = refreshed;
+      },
+      error: (err) => {
+        console.error('Error refreshing review:', err);
+      }
     });
   }
 

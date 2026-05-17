@@ -8,7 +8,7 @@ describe('NavigationService', () => {
   let authServiceSpy: jasmine.SpyObj<AuthService>;
 
   const makeUser = (role: 'PATIENT' | 'PROVIDER' | 'ADMIN'): User => ({
-    userId: '1',
+    userId: 1,
     fullName: 'Test User',
     email: 'test@example.com',
     role,

@@ -797,9 +797,9 @@ export class PatientAppointmentsComponent implements OnInit {
         },
         error: (err) => { 
           console.error('Update review error:', err);
-          this.toast.error('Failed to update review. Please try again.');
-          // Still attempt to refresh in case review was saved despite error
-          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 1000);
+          this.toast.error('Failed to update review. Refreshing to sync with server...');
+          // Always refresh after error to ensure UI is in sync
+          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 500);
         },
         complete: () => {
           this.submittingReview = false;
@@ -828,9 +828,9 @@ export class PatientAppointmentsComponent implements OnInit {
         },
         error: (err) => { 
           console.error('Add review error:', err);
-          this.toast.error('Failed to submit review. Please try again.');
-          // Still attempt to refresh in case review was saved despite error
-          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 1000);
+          this.toast.error('Failed to submit review. Refreshing to sync with server...');
+          // Always refresh after error to ensure UI is in sync
+          setTimeout(() => this.refreshReviewForAppointment(reviewApptId), 500);
         },
         complete: () => {
           this.submittingReview = false;

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   PaymentResponse, PaymentSummary, ProcessPaymentRequest,
@@ -11,6 +12,10 @@ import {
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
   private base = `${environment.apiUrl}/api/payments`;
+  private paymentCache$ = new Map<string, Observable<PaymentResponse>>();
+  private paymentSummaryCache$ = new Map<string, Observable<PaymentSummary[]>>();
+  private paymentResponseListCache$ = new Map<string, Observable<PaymentResponse[]>>();
+  private paymentStatusCache$ = new Map<string, Observable<any>>();
 
   constructor(private http: HttpClient) {}
 
@@ -22,31 +27,67 @@ export class PaymentService {
   }
 
   getByAppointment(appointmentId: number): Observable<PaymentResponse> {
-    return this.http.get<PaymentResponse>(`${this.base}/appointment/${appointmentId}`);
+    const key = `apt:${appointmentId}`;
+    if (!this.paymentCache$.has(key)) {
+      this.paymentCache$.set(
+        key,
+        this.http.get<PaymentResponse>(`${this.base}/appointment/${appointmentId}`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentCache$.get(key)!;
   }
 
   getByPatient(patientId: number): Observable<PaymentSummary[]> {
-    return this.http.get<PaymentSummary[]>(`${this.base}/patient/${patientId}`);
+    const key = `pat:${patientId}`;
+    if (!this.paymentSummaryCache$.has(key)) {
+      this.paymentSummaryCache$.set(
+        key,
+        this.http.get<PaymentSummary[]>(`${this.base}/patient/${patientId}`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentSummaryCache$.get(key)!
   }
 
   getPatientTotal(patientId: number): Observable<{ patientId: number; totalSpending: number; currency: string }> {
-    return this.http.get<{ patientId: number; totalSpending: number; currency: string }>(
-      `${this.base}/patient/${patientId}/total`
-    );
+    const key = `total:${patientId}`;
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<{ patientId: number; totalSpending: number; currency: string }>(
+          `${this.base}/patient/${patientId}/total`
+        ).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   getStatus(appointmentId: number): Observable<{ appointmentId: number; status: string }> {
-    return this.http.get<{ appointmentId: number; status: string }>(
-      `${this.base}/status/${appointmentId}`
-    );
+    const key = `status:${appointmentId}`;
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<{ appointmentId: number; status: string }>(
+          `${this.base}/status/${appointmentId}`
+        ).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   getInvoice(appointmentId: number): Observable<Invoice> {
-    return this.http.get<Invoice>(`${this.base}/invoice/${appointmentId}`);
+    const key = `inv:${appointmentId}`;
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<Invoice>(`${this.base}/invoice/${appointmentId}`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   /** Issues a refund — routes through Razorpay for online payments */
   refund(appointmentId: number, reason?: string): Observable<{ message: string; status: string; refundTransactionId: string; notes: string }> {
+    this.clearCache();
     return this.http.post<{ message: string; status: string; refundTransactionId: string; notes: string }>(
       `${this.base}/razorpay/refund/${appointmentId}`,
       { reason }
@@ -69,20 +110,36 @@ export class PaymentService {
    * The backend marks the payment PAID only if the signature is valid.
    */
   verifyRazorpayPayment(body: RazorpayVerifyRequest): Observable<PaymentResponse> {
+    this.clearCache();
     return this.http.post<PaymentResponse>(`${this.base}/razorpay/verify`, body);
   }
 
   // ── Provider endpoints ─────────────────────────────────────────────────────
 
   getByProvider(providerId: number): Observable<PaymentSummary[]> {
-    return this.http.get<PaymentSummary[]>(`${this.base}/provider/${providerId}`);
+    const key = `prov:${providerId}`;
+    if (!this.paymentSummaryCache$.has(key)) {
+      this.paymentSummaryCache$.set(
+        key,
+        this.http.get<PaymentSummary[]>(`${this.base}/provider/${providerId}`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentSummaryCache$.get(key)!
   }
 
   getEarnings(providerId: number): Observable<EarningsSummary> {
-    return this.http.get<EarningsSummary>(`${this.base}/earnings/${providerId}`);
+    const key = `earn:${providerId}`;
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<EarningsSummary>(`${this.base}/earnings/${providerId}`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   confirmCash(appointmentId: number): Observable<{ message: string; appointmentId: number; status: string; paidAt: string }> {
+    this.clearCache();
     return this.http.post<{ message: string; appointmentId: number; status: string; paidAt: string }>(
       `${this.base}/confirm-cash/${appointmentId}`, null
     );
@@ -91,26 +148,62 @@ export class PaymentService {
   // ── Admin endpoints ────────────────────────────────────────────────────────
 
   getAll(): Observable<PaymentResponse[]> {
-    return this.http.get<PaymentResponse[]>(`${this.base}/all`);
+    const key = 'all';
+    if (!this.paymentResponseListCache$.has(key)) {
+      this.paymentResponseListCache$.set(
+        key,
+        this.http.get<PaymentResponse[]>(`${this.base}/all`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentResponseListCache$.get(key)!
   }
 
   updateStatus(paymentId: number, value: string): Observable<{ message: string; paymentId: number }> {
+    this.clearCache();
     return this.http.put<{ message: string; paymentId: number }>(
       `${this.base}/admin/${paymentId}/status`, null, { params: { value } }
     );
   }
 
   getPlatformRevenue(): Observable<PlatformRevenue> {
-    return this.http.get<PlatformRevenue>(`${this.base}/revenue`);
+    const key = 'platform-revenue';
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<PlatformRevenue>(`${this.base}/revenue`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   getTotalRevenue(): Observable<{ totalRevenue: number; currency: string }> {
-    return this.http.get<{ totalRevenue: number; currency: string }>(`${this.base}/revenue/total`);
+    const key = 'total-revenue';
+    if (!this.paymentStatusCache$.has(key)) {
+      this.paymentStatusCache$.set(
+        key,
+        this.http.get<{ totalRevenue: number; currency: string }>(`${this.base}/revenue/total`).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentStatusCache$.get(key)!;
   }
 
   getByRange(start: string, end: string): Observable<PaymentResponse[]> {
-    return this.http.get<PaymentResponse[]>(`${this.base}/admin/range`, {
-      params: { start, end }
-    });
+    const key = `range:${start}:${end}`;
+    if (!this.paymentResponseListCache$.has(key)) {
+      this.paymentResponseListCache$.set(
+        key,
+        this.http.get<PaymentResponse[]>(`${this.base}/admin/range`, {
+          params: { start, end }
+        }).pipe(shareReplay(1))
+      );
+    }
+    return this.paymentResponseListCache$.get(key)!
+  }
+
+  private clearCache(): void {
+    this.paymentCache$.clear();
+    this.paymentSummaryCache$.clear();
+    this.paymentResponseListCache$.clear();
+    this.paymentStatusCache$.clear();
   }
 }

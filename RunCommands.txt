@@ -1,0 +1,11 @@
+//Build angular app
+ng build
+
+//Run angular app
+ng serve
+
+//Karma/Jasmine
+ng test --code-coverage
+
+//Sonarqube
+sonar-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=sqa_8a4cbd13a9438c758287cf7d08ba0232b88c540a"

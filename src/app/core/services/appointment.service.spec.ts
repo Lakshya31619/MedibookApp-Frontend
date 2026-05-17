@@ -11,10 +11,10 @@ describe('AppointmentService', () => {
   const base = `${environment.apiUrl}/api/appointments`;
 
   const mockAppointment: AppointmentResponse = {
-    appointmentId: '1',
-    patientId: '2',
-    providerId: '3',
-    slotId: '5',
+    appointmentId: 1,
+    patientId: 2,
+    providerId: 3,
+    slotId: 5,
     serviceType: 'General Consultation',
     appointmentDate: '2026-06-01',
     startTime: '09:00',
@@ -26,9 +26,9 @@ describe('AppointmentService', () => {
   } as any;
 
   const mockSummary: AppointmentSummary = {
-    appointmentId: '1',
-    patientId: '2',
-    providerId: '3',
+    appointmentId: 1,
+    patientId: 2,
+    providerId: 3,
     serviceType: 'General Consultation',
     appointmentDate: '2026-06-01',
     startTime: '09:00',
@@ -72,8 +72,8 @@ describe('AppointmentService', () => {
   // ── getById ──────────────────────────────────────────────────────────────────
 
   it('should GET /appointments/:id', () => {
-    service.getById('1').subscribe(res => {
-      expect(res.appointmentId).toBe('1');
+    service.getById(1).subscribe(res => {
+      expect(res.appointmentId).toBe(1);
     });
 
     const httpReq = httpMock.expectOne(`${base}/1`);
@@ -84,7 +84,7 @@ describe('AppointmentService', () => {
   // ── getPatientAppointments ────────────────────────────────────────────────────
 
   it('should GET /patient/:id', () => {
-    service.getPatientAppointments('2').subscribe(res => {
+    service.getPatientAppointments(2).subscribe(res => {
       expect(res.length).toBe(1);
     });
 
@@ -96,7 +96,7 @@ describe('AppointmentService', () => {
   // ── getPatientUpcoming ────────────────────────────────────────────────────────
 
   it('should GET /patient/:id/upcoming', () => {
-    service.getPatientUpcoming('2').subscribe();
+    service.getPatientUpcoming(2).subscribe();
     const httpReq = httpMock.expectOne(`${base}/patient/2/upcoming`);
     expect(httpReq.request.method).toBe('GET');
     httpReq.flush([mockSummary]);
@@ -105,7 +105,7 @@ describe('AppointmentService', () => {
   // ── cancel ───────────────────────────────────────────────────────────────────
 
   it('should PUT to /:id/cancel with reason', () => {
-    service.cancel('1', 'Schedule conflict').subscribe(res => {
+    service.cancel(1, 'Schedule conflict').subscribe(res => {
       expect(res.status).toBe('CANCELLED');
     });
 
@@ -116,7 +116,7 @@ describe('AppointmentService', () => {
   });
 
   it('should PUT to /:id/cancel without reason', () => {
-    service.cancel('1').subscribe();
+    service.cancel(1).subscribe();
     const httpReq = httpMock.expectOne(`${base}/1/cancel`);
     expect(httpReq.request.body).toEqual({ reason: undefined });
     httpReq.flush(mockAppointment);
@@ -125,17 +125,17 @@ describe('AppointmentService', () => {
   // ── reschedule ────────────────────────────────────────────────────────────────
 
   it('should PUT to /:id/reschedule with new slot', () => {
-    service.reschedule('1', '10', 'Changed plans').subscribe();
+    service.reschedule(1, 10, 'Changed plans').subscribe();
     const httpReq = httpMock.expectOne(`${base}/1/reschedule`);
     expect(httpReq.request.method).toBe('PUT');
-    expect(httpReq.request.body).toEqual({ newSlotId: '10', reason: 'Changed plans' });
+    expect(httpReq.request.body).toEqual({ newSlotId: 10, reason: 'Changed plans' });
     httpReq.flush(mockAppointment);
   });
 
   // ── getProviderAppointments ───────────────────────────────────────────────────
 
   it('should GET /provider/:id', () => {
-    service.getProviderAppointments('3').subscribe();
+    service.getProviderAppointments(3).subscribe();
     const httpReq = httpMock.expectOne(`${base}/provider/3`);
     expect(httpReq.request.method).toBe('GET');
     httpReq.flush([mockSummary]);
@@ -144,7 +144,7 @@ describe('AppointmentService', () => {
   // ── getProviderToday ──────────────────────────────────────────────────────────
 
   it('should GET /provider/:id/today', () => {
-    service.getProviderToday('3').subscribe();
+    service.getProviderToday(3).subscribe();
     const httpReq = httpMock.expectOne(`${base}/provider/3/today`);
     expect(httpReq.request.method).toBe('GET');
     httpReq.flush([mockSummary]);
@@ -153,7 +153,7 @@ describe('AppointmentService', () => {
   // ── getProviderUpcoming ───────────────────────────────────────────────────────
 
   it('should GET /provider/:id/upcoming', () => {
-    service.getProviderUpcoming('3').subscribe();
+    service.getProviderUpcoming(3).subscribe();
     const httpReq = httpMock.expectOne(`${base}/provider/3/upcoming`);
     expect(httpReq.request.method).toBe('GET');
     httpReq.flush([mockSummary]);
@@ -162,7 +162,7 @@ describe('AppointmentService', () => {
   // ── getProviderByDate ─────────────────────────────────────────────────────────
 
   it('should GET /provider/:id/date with date query param', () => {
-    service.getProviderByDate('3', '2026-06-01').subscribe();
+    service.getProviderByDate(3, '2026-06-01').subscribe();
     const httpReq = httpMock.expectOne(
       req => req.url === `${base}/provider/3/date` && req.params.get('date') === '2026-06-01'
     );
@@ -173,7 +173,7 @@ describe('AppointmentService', () => {
   // ── complete ──────────────────────────────────────────────────────────────────
 
   it('should PUT to /:id/complete', () => {
-    service.complete('1').subscribe(res => {
+    service.complete(1).subscribe(res => {
       expect(res.status).toBe('COMPLETED');
     });
     const httpReq = httpMock.expectOne(`${base}/1/complete`);
@@ -184,7 +184,7 @@ describe('AppointmentService', () => {
   // ── markNoShow ────────────────────────────────────────────────────────────────
 
   it('should PUT to /:id/no-show', () => {
-    service.markNoShow('1').subscribe();
+    service.markNoShow(1).subscribe();
     const httpReq = httpMock.expectOne(`${base}/1/no-show`);
     expect(httpReq.request.method).toBe('PUT');
     httpReq.flush({ ...mockAppointment, status: 'NO_SHOW' });
@@ -194,14 +194,14 @@ describe('AppointmentService', () => {
 
   it('should GET /provider/:id/count', () => {
     const mockCount: AppointmentCount = {
-      providerId: '3',
+      providerId: 3,
       total: 10,
       completed: 6,
       scheduled: 3,
       cancelled: 1,
     } as any;
 
-    service.getProviderCount('3').subscribe(count => {
+    service.getProviderCount(3).subscribe(count => {
       expect(count.total).toBe(10);
       expect(count.completed).toBe(6);
     });
@@ -225,7 +225,7 @@ describe('AppointmentService', () => {
   // ── updateStatus ──────────────────────────────────────────────────────────────
 
   it('should PUT to /:id/status with value param', () => {
-    service.updateStatus('1', 'COMPLETED').subscribe();
+    service.updateStatus(1, 'COMPLETED').subscribe();
     const httpReq = httpMock.expectOne(
       req => req.url === `${base}/1/status` && req.params.get('value') === 'COMPLETED'
     );

@@ -13,7 +13,7 @@ describe('AuthService', () => {
   const base = `${environment.apiUrl}/api/auth`;
 
   const mockUser: User = {
-    userId: '1',
+    userId: 1,
     fullName: 'John Doe',
     email: 'john@example.com',
     role: 'PATIENT',
@@ -67,7 +67,7 @@ describe('AuthService', () => {
     const httpReq = httpMock.expectOne(`${base}/register`);
     expect(httpReq.request.method).toBe('POST');
     expect(httpReq.request.body).toEqual(req);
-    httpReq.flush({ message: 'Registered', userId: '2', email: 'jane@example.com', role: 'PATIENT' });
+    httpReq.flush({ message: 'Registered', userId: 2, email: 'jane@example.com', role: 'PATIENT' });
   });
 
   // ── login ────────────────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ describe('AuthService', () => {
     httpMock.expectOne(`${base}/login`).flush(mockSession);
 
     const updatedUser = { ...mockUser, fullName: 'John Updated' };
-    service.updateProfile('1', { fullName: 'John Updated' }).subscribe();
+    service.updateProfile(1, { fullName: 'John Updated' }).subscribe();
 
     const httpReq = httpMock.expectOne(`${base}/profile/1`);
     expect(httpReq.request.method).toBe('PUT');
@@ -262,7 +262,7 @@ describe('AuthService', () => {
     const user = service.currentUser();
     expect(user?.email).toBe('oauth@example.com');
     expect(user?.role).toBe('PATIENT');
-    expect(user?.userId).toBe('5');
+    expect(user?.userId).toBe(5);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/patient/dashboard']);
   });
 

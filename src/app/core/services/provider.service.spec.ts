@@ -11,7 +11,7 @@ describe('ProviderService', () => {
   const base = `${environment.apiUrl}/api/providers`;
 
   const mockSummary: ProviderSummary = {
-    providerId: 'p1',
+    providerId: 1,
     providerName: 'Dr. Alice',
     specialization: 'Cardiology',
     clinicName: 'Heart Clinic',
@@ -24,8 +24,8 @@ describe('ProviderService', () => {
   };
 
   const mockResponse: ProviderResponse = {
-    providerId: 'p1',
-    userId: 'u1',
+    providerId: 1,
+    userId: 1,
     providerName: 'Dr. Alice',
     specialization: 'Cardiology',
     qualification: 'MBBS, MD',
@@ -58,7 +58,7 @@ describe('ProviderService', () => {
   it('should GET /providers', () => {
     service.getAll().subscribe(res => {
       expect(res.length).toBe(1);
-      expect(res[0].providerId).toBe('p1');
+      expect(res[0].providerId).toBe(1);
     });
 
     const req = httpMock.expectOne(base);
@@ -69,12 +69,12 @@ describe('ProviderService', () => {
   // ── getById ───────────────────────────────────────────────────────────────
 
   it('should GET /providers/:id', () => {
-    service.getById('p1').subscribe(res => {
-      expect(res.providerId).toBe('p1');
+    service.getById(1).subscribe(res => {
+      expect(res.providerId).toBe(1);
       expect(res.verified).toBeTrue();
     });
 
-    const req = httpMock.expectOne(`${base}/p1`);
+    const req = httpMock.expectOne(`${base}/1`);
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
   });
@@ -117,7 +117,7 @@ describe('ProviderService', () => {
 
   it('should POST to /providers/register', () => {
     const body: ProviderRegisterRequest = {
-      userId: 'u1',
+      userId: 1,
       specialization: 'Cardiology',
       qualification: 'MBBS',
       experienceYears: 5,
@@ -125,23 +125,23 @@ describe('ProviderService', () => {
 
     service.register(body).subscribe(res => {
       expect(res.verificationStatus).toBe('PENDING');
-      expect(res.providerId).toBe('p1');
+      expect(res.providerId).toBe(1);
     });
 
     const req = httpMock.expectOne(`${base}/register`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(body);
-    req.flush({ message: 'Registered', providerId: 'p1', verificationStatus: 'PENDING' });
+    req.flush({ message: 'Registered', providerId: 1, verificationStatus: 'PENDING' });
   });
 
   // ── getMyProfile ──────────────────────────────────────────────────────────
 
   it('should GET /providers/my/:userId', () => {
-    service.getMyProfile('u1').subscribe(res => {
-      expect(res.userId).toBe('u1');
+    service.getMyProfile(1).subscribe(res => {
+      expect(res.userId).toBe(1);
     });
 
-    const req = httpMock.expectOne(`${base}/my/u1`);
+    const req = httpMock.expectOne(`${base}/my/1`);
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
   });
@@ -151,11 +151,11 @@ describe('ProviderService', () => {
   it('should PUT to /providers/:id', () => {
     const updates: Partial<ProviderRegisterRequest> = { bio: 'Updated bio' };
 
-    service.update('p1', updates).subscribe(res => {
-      expect(res.providerId).toBe('p1');
+    service.update(1, updates).subscribe(res => {
+      expect(res.providerId).toBe(1);
     });
 
-    const req = httpMock.expectOne(`${base}/p1`);
+    const req = httpMock.expectOne(`${base}/1`);
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(updates);
     req.flush(mockResponse);
@@ -164,20 +164,20 @@ describe('ProviderService', () => {
   // ── setAvailability ───────────────────────────────────────────────────────
 
   it('should PUT /providers/:id/availability with status=true', () => {
-    service.setAvailability('p1', true).subscribe();
+    service.setAvailability(1, true).subscribe();
 
     const req = httpMock.expectOne(
-      r => r.url === `${base}/p1/availability` && r.params.get('status') === 'true'
+      r => r.url === `${base}/1/availability` && r.params.get('status') === 'true'
     );
     expect(req.request.method).toBe('PUT');
     req.flush({ ...mockResponse, available: true });
   });
 
   it('should PUT /providers/:id/availability with status=false', () => {
-    service.setAvailability('p1', false).subscribe();
+    service.setAvailability(1, false).subscribe();
 
     const req = httpMock.expectOne(
-      r => r.url === `${base}/p1/availability` && r.params.get('status') === 'false'
+      r => r.url === `${base}/1/availability` && r.params.get('status') === 'false'
     );
     expect(req.request.method).toBe('PUT');
     req.flush({ ...mockResponse, available: false });
@@ -211,37 +211,37 @@ describe('ProviderService', () => {
   // ── approve ───────────────────────────────────────────────────────────────
 
   it('should PUT to /providers/:id/verify', () => {
-    service.approve('p1').subscribe(res => {
+    service.approve(1).subscribe(res => {
       expect(res.verificationStatus).toBe('APPROVED');
     });
 
-    const req = httpMock.expectOne(`${base}/p1/verify`);
+    const req = httpMock.expectOne(`${base}/1/verify`);
     expect(req.request.method).toBe('PUT');
-    req.flush({ message: 'Approved', providerId: 'p1', verificationStatus: 'APPROVED' });
+    req.flush({ message: 'Approved', providerId: 1, verificationStatus: 'APPROVED' });
   });
 
   // ── reject ────────────────────────────────────────────────────────────────
 
   it('should POST to /providers/:id/reject with reason', () => {
-    service.reject('p1', 'Invalid credentials').subscribe(res => {
+    service.reject(1, 'Invalid credentials').subscribe(res => {
       expect(res.verificationStatus).toBe('REJECTED');
       expect(res.reason).toBe('Invalid credentials');
     });
 
-    const req = httpMock.expectOne(`${base}/p1/reject`);
+    const req = httpMock.expectOne(`${base}/1/reject`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ reason: 'Invalid credentials' });
-    req.flush({ message: 'Rejected', providerId: 'p1', verificationStatus: 'REJECTED', reason: 'Invalid credentials' });
+    req.flush({ message: 'Rejected', providerId: 1, verificationStatus: 'REJECTED', reason: 'Invalid credentials' });
   });
 
   // ── unverify ──────────────────────────────────────────────────────────────
 
   it('should PUT to /providers/:id/unverify', () => {
-    service.unverify('p1').subscribe(res => {
+    service.unverify(1).subscribe(res => {
       expect(res.verified).toBeDefined();
     });
 
-    const req = httpMock.expectOne(`${base}/p1/unverify`);
+    const req = httpMock.expectOne(`${base}/1/unverify`);
     expect(req.request.method).toBe('PUT');
     req.flush({ ...mockResponse, verified: false });
   });
@@ -249,11 +249,11 @@ describe('ProviderService', () => {
   // ── delete ────────────────────────────────────────────────────────────────
 
   it('should DELETE /providers/:id', () => {
-    service.delete('p1').subscribe(res => {
+    service.delete(1).subscribe(res => {
       expect(res.message).toBeTruthy();
     });
 
-    const req = httpMock.expectOne(`${base}/p1`);
+    const req = httpMock.expectOne(`${base}/1`);
     expect(req.request.method).toBe('DELETE');
     req.flush({ message: 'Provider deleted' });
   });

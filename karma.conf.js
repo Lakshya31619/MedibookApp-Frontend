@@ -25,8 +25,8 @@ module.exports = function (config) {
       dir: require('path').join(__dirname, './coverage/medibook'),
       subdir: '.',
       reporters: [
-        { type: 'html' },    // human-readable
-        { type: 'lcovonly' }, // consumed by SonarQube
+        { type: 'html' },
+        { type: 'lcovonly' },
         { type: 'text-summary' },
       ],
     },
@@ -34,16 +34,15 @@ module.exports = function (config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: true,
-    browsers: ['Chrome'],
+    autoWatch: false,
+    browsers: ['ChromeHeadlessCI'],   // ← changed from 'Chrome'
     customLaunchers: {
-      // Used in CI / SonarQube pipeline (no display)
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: ['--no-sandbox', '--disable-gpu'],
       },
     },
-    singleRun: false,
-    restartOnFileChange: true,
+    singleRun: true,                  // ← changed from false
+    restartOnFileChange: false,
   });
 };

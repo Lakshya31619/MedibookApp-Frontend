@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthSession, LoginRequest, RegisterRequest, User, UserRole } from '../models';
 
@@ -10,6 +11,8 @@ export class AuthService {
   private readonly TOKEN_KEY = 'medibook_token';
   private readonly USER_KEY = 'medibook_user';
   private base = `${environment.apiUrl}/api/auth`;
+  private profileCache$ = new Map<string, Observable<User>>();
+  private adminUsersCache$ = new Map<string, Observable<User[]>>();
 
   currentUser = signal<User | null>(this.loadUser());
 
@@ -44,15 +47,24 @@ export class AuthService {
   }
 
   getProfile(userId: number): Observable<User> {
-    return this.http.get<User>(`${this.base}/profile/${userId}`).pipe(
-      tap(user => {
-        console.log('[AuthService] getProfile() response:', user);
-        console.log('[AuthService] fullName in response:', user.fullName);
-      })
-    );
+    const key = `profile:${userId}`;
+    if (!this.profileCache$.has(key)) {
+      this.profileCache$.set(
+        key,
+        this.http.get<User>(`${this.base}/profile/${userId}`).pipe(
+          tap(user => {
+            console.log('[AuthService] getProfile() response:', user);
+            console.log('[AuthService] fullName in response:', user.fullName);
+          }),
+          shareReplay(1)
+        )
+      );
+    }
+    return this.profileCache$.get(key)!;
   }
 
   updateProfile(userId: number, body: { fullName?: string; phone?: string; profilePicUrl?: string }): Observable<{ message: string; user: User }> {
+    this.clearCache();
     return this.http.put<{ message: string; user: User }>(`${this.base}/profile/${userId}`, body).pipe(
       tap(res => {
         console.log('[AuthService] updateProfile() response:', res);
@@ -83,6 +95,7 @@ export class AuthService {
   }
 
   changePassword(body: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
+    this.clearCache();
     return this.http.put<{ message: string }>(`${this.base}/password`, body);
   }
 
@@ -91,8 +104,15 @@ export class AuthService {
   }
 
   getAdminUsers(role?: string): Observable<User[]> {
-    const params = role ? `?role=${role}` : '';
-    return this.http.get<User[]>(`${this.base}/admin/users${params}`);
+    const key = `admin:users:${role || 'all'}`;
+    if (!this.adminUsersCache$.has(key)) {
+      const params = role ? `?role=${role}` : '';
+      this.adminUsersCache$.set(
+        key,
+        this.http.get<User[]>(`${this.base}/admin/users${params}`).pipe(shareReplay(1))
+      );
+    }
+    return this.adminUsersCache$.get(key)!;
   }
 
   /**
@@ -142,6 +162,11 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  private clearCache(): void {
+    this.profileCache$.clear();
+    this.adminUsersCache$.clear();
   }
 
   get role(): UserRole | null {
